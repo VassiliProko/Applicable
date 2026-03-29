@@ -1,26 +1,171 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Colors – Primary */
+  --primary-500: #E8432A;
+  --primary-hover: #d03a23;
+  --primary-active: #b8321d;
+  --primary-tint: rgba(232, 67, 42, 0.12);
+  --primary-focus-ring: rgba(232, 67, 42, 0.2);
+
+  /* Colors – Secondary & Accent */
+  --secondary-500: #F5A432;
+  --accent-500: #2E7EA6;
+
+  /* Colors – Background & Surfaces (Tailwind Zinc) */
+  --background: #09090b;
+  --surface-1: #18181b;
+  --surface-2: #27272a;
+  --surface-3: #3f3f46;
+
+  /* Colors – Text (Zinc scale) */
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #71717a;
+  --text-disabled: #52525b;
+
+  /* Colors – Semantic */
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --info: #3B82F6;
+
+  /* Borders */
+  --border-base: rgba(255, 255, 255, 0.08);
+  --border-divider: rgba(255, 255, 255, 0.04);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --border-focus: rgba(255, 255, 255, 0.16);
+
+  /* Elevation */
+  --shadow-low: 0 1px 3px -1px rgba(0, 0, 0, 0.059), 0 3px 8px -1px rgba(0, 0, 0, 0.047);
+  --shadow-mid: 0 2px 8px -2px rgba(0, 0, 0, 0.1), 0 8px 24px -4px rgba(0, 0, 0, 0.08);
+  --shadow-high: 0 4px 18px -4px rgba(0, 0, 0, 0.148), 0 18px 53px -9px rgba(0, 0, 0, 0.119);
+
+  /* Motion */
+  --ease-micro: cubic-bezier(0, 0.9, 0.1, 1);
+  --ease-base: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --duration-micro: 100ms;
+  --duration-base: 200ms;
+  --duration-medium: 300ms;
+  --duration-large: 500ms;
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-primary: var(--primary-500);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-primary-tint: var(--primary-tint);
+  --color-secondary: var(--secondary-500);
+  --color-accent: var(--accent-500);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-disabled: var(--text-disabled);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-border: var(--border-base);
+  --color-border-hover: var(--border-hover);
+  --color-border-focus: var(--border-focus);
+  --font-heading: var(--font-playfair);
+  --font-body: var(--font-source-sans);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ── Type Scale (Major Third 1.25) ── */
+
+.type-display {
+  font-family: var(--font-playfair), Georgia, 'Times New Roman', serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 48px;
+  letter-spacing: -0.02em;
+}
+
+.type-headline {
+  font-family: var(--font-playfair), Georgia, 'Times New Roman', serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 40px;
+  letter-spacing: -0.015em;
+}
+
+.type-title {
+  font-family: var(--font-source-sans), 'Helvetica Neue', Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 32px;
+  letter-spacing: -0.01em;
+}
+
+.type-subhead {
+  font-family: var(--font-source-sans), 'Helvetica Neue', Arial, sans-serif;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 32px;
+  letter-spacing: 0em;
+}
+
+.type-body {
+  font-family: var(--font-source-sans), 'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 32px;
+  letter-spacing: 0em;
+}
+
+.type-caption {
+  font-family: var(--font-source-sans), 'Helvetica Neue', Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: 0.01em;
+}
+
+/* ── Base ── */
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--text-primary);
+  font-family: var(--font-source-sans), 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ── Dialog ── */
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+dialog[open] {
+  animation: dialog-in var(--duration-medium) var(--ease-base);
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }

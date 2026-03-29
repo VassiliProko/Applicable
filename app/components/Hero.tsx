@@ -1,0 +1,33 @@
+import Image from "next/image";
+import { ArrowDown } from "lucide-react";
+
+export default function Hero() {
+  return (
+    <section className="flex flex-col items-center justify-center px-9 pt-18 pb-18 text-center">
+      <h1 className="type-display max-w-3xl">
+        Where skills take{" "}
+        <span className="italic text-primary">flight</span>
+      </h1>
+      <p className="type-body mt-6 max-w-xl text-text-secondary">
+        Prove your abilities through real-world projects. No degree required.
+        Build a verified track record that speaks for itself.
+      </p>
+      <Image
+        src="/images/landing_image.jpg"
+        alt="Landing hero"
+        width={600}
+        height={400}
+        className="mt-10 w-full max-w-3xl rounded-lg object-cover"
+        priority
+      />
+      <a
+        href="#projects"
+        className="mt-8 inline-flex h-12 items-center gap-2 rounded-[6px] bg-primary px-6 font-body text-base font-medium text-white transition-all duration-100 hover:bg-primary-hover active:bg-primary-active active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        style={{ fontFamily: "var(--font-source-sans), 'Helvetica Neue', Arial, sans-serif" }}
+      >
+        Discover Projects
+        <ArrowDown size={20} />
+      </a>
+    </section>
+  );
+}

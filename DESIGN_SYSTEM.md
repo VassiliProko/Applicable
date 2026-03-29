@@ -11,7 +11,7 @@ Use only the tokens defined below within each category. Do not introduce new val
 - Spacing: Balanced spacing — standard density. Base unit 24px, baseline grid 8px.
 - Surfaces: Moderately rounded (12px) — friendly but structured. Bordered (1px at 6% opacity) — explicit structure. Layered elevation — shadow for depth hierarchy.
 - Motion: Standard motion timing.
-- Color: Primary #E8432A + Accent #2E7EA6 — bold contrast. on #0E2A3C background.
+- Color: Primary #E8432A + Accent #2E7EA6 — bold contrast. on #09090b (zinc-950) background. Neutral-first: surfaces are zinc, color used sparingly for CTAs, highlights, and wayfinding.
 - Type: Playfair Display (headings) + Source Sans 3 (body) — serif/sans pairing.
 
 This combination defines the visual personality. Every token below serves this DNA. Prioritize tokens that reinforce these characteristics.
@@ -36,12 +36,21 @@ Base: accent-500: #2E7EA6
 Tints (lighter): accent-600: #5898b8, accent-700: #82b2ca, accent-800: #abccdb, accent-900: #d5e5ed
 Text on accent: #ffffff (primary), #091921 (secondary)
 
+### Neutral Scale (Tailwind Zinc)
+- zinc-50: #fafafa | zinc-100: #f4f4f5 | zinc-200: #e4e4e7 | zinc-300: #d4d4d8 | zinc-400: #a1a1aa | zinc-500: #71717a | zinc-600: #52525b | zinc-700: #3f3f46 | zinc-800: #27272a | zinc-900: #18181b | zinc-950: #09090b
+
 ### Background & Surfaces
-- Background: #0E2A3C
-- surface-1: #153a50 | surface-2: #1d4a64 | surface-3: #255a78 (progressively lighter shades)
+- Background: #09090b (zinc-950)
+- surface-1: #18181b (zinc-900) | surface-2: #27272a (zinc-800) | surface-3: #3f3f46 (zinc-700) (progressively lighter shades)
 - Border: rgba(255,255,255,0.08)
-- Text primary: #f0f0ec, secondary: #b8c8d0, tertiary: #7a8f9c, disabled: #4a5f6c
-- Neutral gray: #C8C8C8 (for borders, dividers, muted UI elements)
+- Text primary: #fafafa (zinc-50), secondary: #a1a1aa (zinc-400), tertiary: #71717a (zinc-500), disabled: #52525b (zinc-600)
+
+### Color Usage Philosophy
+- The UI is **primarily neutral** — zinc tones dominate backgrounds, surfaces, text, and chrome.
+- Primary (#E8432A) is reserved for: CTAs, active states, progress indicators, key action buttons.
+- Secondary (#F5A432) is reserved for: warnings, highlights, badges, secondary actions.
+- Accent (#2E7EA6) is reserved for: links, focus rings, informational elements, selected states.
+- Never use primary/secondary/accent as background fills for large areas. They are **guides**, not paint.
 
 ### Semantic Colors
 - Success: #22C55E | Warning: #F59E0B | Error: #EF4444 | Info: #3B82F6
@@ -78,7 +87,7 @@ Text on accent: #ffffff (primary), #091921 (secondary)
 - Use for: paragraphs, UI labels, buttons, inputs, captions, navigation, metadata
 
 ### Pairing Strategy
-Playfair Display (serif) + Source Sans 3 (sans-serif) — classic contrast pairing. Serif headings provide elegance and authority, sans-serif body ensures readability. Differentiate via family and weight: Playfair Display at 600-900 for titles, Source Sans 3 at 400 for body text.
+Playfair Display (serif) + Source Sans 3 (sans-serif) — classic contrast pairing. Playfair Display is reserved for Display and Headline sizes only (hero text, page/section headings). All other text uses Source Sans 3. This keeps the serif as a rare, high-impact accent.
 
 ### Type Scale — Major Third (ratio 1.25)
 Apply these exact values. Define as CSS custom properties or design tokens:
@@ -86,7 +95,7 @@ Apply these exact values. Define as CSS custom properties or design tokens:
 **Caption** → font-family: Source Sans 3 | font-size: 12px | font-weight: 400 | line-height: 24px (1.4 → snapped to 8px grid) | letter-spacing: 0.01em
 **Body** → font-family: Source Sans 3 | font-size: 16px | font-weight: 400 | line-height: 32px (1.6 → snapped to 8px grid) | letter-spacing: 0em
 **Subhead** → font-family: Source Sans 3 | font-size: 20px | font-weight: 500 | line-height: 32px (1.35 → snapped to 8px grid) | letter-spacing: 0em
-**Title** → font-family: Playfair Display | font-size: 24px | font-weight: 600 | line-height: 32px (1.2 → snapped to 8px grid) | letter-spacing: -0.01em
+**Title** → font-family: Source Sans 3 | font-size: 24px | font-weight: 600 | line-height: 32px (1.2 → snapped to 8px grid) | letter-spacing: -0.01em
 **Headline** → font-family: Playfair Display | font-size: 32px | font-weight: 700 | line-height: 40px (1.2 → snapped to 8px grid) | letter-spacing: -0.015em
 **Display** → font-family: Playfair Display | font-size: 40px | font-weight: 700 | line-height: 48px (1.2 → snapped to 8px grid) | letter-spacing: -0.02em
 
@@ -249,7 +258,7 @@ Use only these values for layout margin, padding, and gap. Values in Component S
 
 ## 6. Visual Direction
 
-**Scandinavian**: Deep navy backgrounds with bold red and orange accents. Generous padding. Rounded corners. Soft diffused shadows. Line-weight icons. Calm, breathable layouts. Cool blue undertones with warm accent pops.
+**Scandinavian**: Neutral zinc backgrounds — dark, clean, minimal. Color is used sparingly: red and orange for CTAs and key moments, steel blue for links and focus. Generous padding. Rounded corners. Soft diffused shadows. Line-weight icons. Calm, breathable layouts. The UI feels quiet until a user needs guidance — then color draws the eye.
 
 ## 7. Component Specifications
 
@@ -282,7 +291,7 @@ Use only these values for layout margin, padding, and gap. Values in Component S
 
 ### Cards
 **Default state**
-- background: #153a50
+- background: #18181b (zinc-900)
 - border-radius: 12px
 - padding: 18px
 - box-shadow: 0 1px 3px -1px rgba(0,0,0,0.059),0 3px 8px -1px rgba(0,0,0,0.047)
@@ -311,7 +320,7 @@ Use only these values for layout margin, padding, and gap. Values in Component S
 - border: 1px solid #EF4444
 
 **Disabled state**
-- background: #1d4a64
+- background: #27272a (zinc-800)
 - opacity: 0.4
 
 ### Modals
@@ -319,14 +328,14 @@ Use only these values for layout margin, padding, and gap. Values in Component S
 - background: rgba(0,0,0,0.6), backdrop-filter: blur(4px)
 
 **Panel**
-- background: #153a50
+- background: #18181b (zinc-900)
 - border-radius: 18px
 - box-shadow: 0 4px 18px -4px rgba(0,0,0,0.148),0 18px 53px -9px rgba(0,0,0,0.119)
 - max-width: 480px
 - padding: 36px
 
 ### Dropdowns / Popovers
-- background: #1d4a64
+- background: #27272a (zinc-800)
 - border-radius: 3px
 - box-shadow: 0 2px 8px -2px rgba(0,0,0,0.1),0 8px 24px -4px rgba(0,0,0,0.08)
 - border: 1px solid rgba(255,255,255,0.08)
@@ -334,7 +343,7 @@ Use only these values for layout margin, padding, and gap. Values in Component S
 - enter animation: scale(0.95) → scale(1), opacity 0 → 1, duration 200ms, easing cubic-bezier(0,0,.2,1)
 
 ### Tooltips
-- background: #255a78
+- background: #3f3f46 (zinc-700)
 - border-radius: 3px
 - padding: 6px 12px
 - font-size: 12px
@@ -342,7 +351,7 @@ Use only these values for layout margin, padding, and gap. Values in Component S
 
 ### Toast / Snackbar
 - position: fixed, bottom-right, 24px from edges
-- background: #1d4a64
+- background: #27272a (zinc-800)
 - border-radius: 6px
 - box-shadow: 0 2px 8px -2px rgba(0,0,0,0.1),0 8px 24px -4px rgba(0,0,0,0.08)
 - auto-dismiss: 5s
