@@ -7,9 +7,11 @@ import { X, Clock, Signal, Check, CheckCircle } from "lucide-react";
 export default function ProjectModal({
   project,
   onClose,
+  showApply = true,
 }: {
   project: Project | null;
   onClose: () => void;
+  showApply?: boolean;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
@@ -90,12 +92,12 @@ export default function ProjectModal({
           </button>
 
           {/* Left: project details */}
-          <div className="flex-1 overflow-y-auto p-9 lg:max-w-[60%]">
+          <div className={`flex-1 overflow-y-auto p-9 ${showApply ? "lg:max-w-[60%]" : ""}`}>
             <h2 id="modal-title" className="type-headline pr-8">
               {project.title}
             </h2>
 
-            <div className="mt-4 aspect-[4/3] w-full overflow-hidden rounded-[10px] bg-black">
+            <div className="mt-4 aspect-video max-w-md overflow-hidden rounded-[10px] bg-black">
               {project.imageUrl && (
                 <img
                   src={project.imageUrl}
@@ -175,84 +177,86 @@ export default function ProjectModal({
           </div>
 
           {/* Right: application form */}
-          <div className="border-t border-border bg-surface-2/50 p-9 lg:w-[40%] lg:border-l lg:border-t-0 overflow-y-auto">
-            {submitted ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <CheckCircle size={48} className="text-success" />
-                <h3 className="type-title mt-4">Application Sent</h3>
-                <p className="type-body mt-2 text-text-secondary">
-                  Your application has been submitted. We&apos;ll be in touch
-                  soon.
-                </p>
-                <button
-                  onClick={resetAndClose}
-                  className="mt-6 h-12 rounded-[6px] bg-surface-2 px-6 text-base font-medium transition-all duration-100 hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                >
-                  Close
-                </button>
-              </div>
-            ) : (
-              <>
-                <h3 className="type-title">Apply</h3>
-                <p className="type-caption mt-1 text-text-tertiary">
-                  Tell us why you&apos;re a great fit for this project.
-                </p>
-                <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-                  {project.applicationQuestions.map((q) => (
-                    <div key={q.id}>
-                      <label
-                        htmlFor={q.id}
-                        className="type-body block font-medium text-text-primary"
-                      >
-                        {q.label}
-                        {q.required && (
-                          <span className="ml-1 text-primary">*</span>
-                        )}
-                      </label>
-                      {q.type === "textarea" ? (
-                        <textarea
-                          id={q.id}
-                          placeholder={q.placeholder}
-                          required={q.required}
-                          value={formData[q.id] ?? ""}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              [q.id]: e.target.value,
-                            }))
-                          }
-                          rows={3}
-                          className="type-body mt-1.5 w-full resize-y rounded-[6px] border border-border bg-transparent px-3.5 py-2.5 text-text-primary placeholder:text-text-tertiary transition-all duration-100 focus:border-primary focus:outline-none focus:shadow-[0_0_0_2px_var(--primary-focus-ring)]"
-                        />
-                      ) : (
-                        <input
-                          id={q.id}
-                          type="text"
-                          placeholder={q.placeholder}
-                          required={q.required}
-                          value={formData[q.id] ?? ""}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              [q.id]: e.target.value,
-                            }))
-                          }
-                          className="type-body mt-1.5 h-12 w-full rounded-[6px] border border-border bg-transparent px-3.5 text-text-primary placeholder:text-text-tertiary transition-all duration-100 focus:border-primary focus:outline-none focus:shadow-[0_0_0_2px_var(--primary-focus-ring)]"
-                        />
-                      )}
-                    </div>
-                  ))}
+          {showApply && (
+            <div className="border-t border-border bg-surface-2/50 p-9 lg:w-[40%] lg:border-l lg:border-t-0 overflow-y-auto">
+              {submitted ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <CheckCircle size={48} className="text-success" />
+                  <h3 className="type-title mt-4">Application Sent</h3>
+                  <p className="type-body mt-2 text-text-secondary">
+                    Your application has been submitted. We&apos;ll be in touch
+                    soon.
+                  </p>
                   <button
-                    type="submit"
-                    disabled={!requiredFilled}
-                    className="h-12 w-full rounded-[6px] bg-primary text-base font-medium text-white transition-all duration-100 hover:bg-primary-hover active:bg-primary-active active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:pointer-events-none"
+                    onClick={resetAndClose}
+                    className="mt-6 h-12 rounded-[6px] bg-surface-2 px-6 text-base font-medium transition-all duration-100 hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   >
-                    Submit Application
+                    Close
                   </button>
-                </form>
-              </>
-            )}
-          </div>
+                </div>
+              ) : (
+                <>
+                  <h3 className="type-title">Apply</h3>
+                  <p className="type-caption mt-1 text-text-tertiary">
+                    Tell us why you&apos;re a great fit for this project.
+                  </p>
+                  <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+                    {project.applicationQuestions.map((q) => (
+                      <div key={q.id}>
+                        <label
+                          htmlFor={q.id}
+                          className="type-body block font-medium text-text-primary"
+                        >
+                          {q.label}
+                          {q.required && (
+                            <span className="ml-1 text-primary">*</span>
+                          )}
+                        </label>
+                        {q.type === "textarea" ? (
+                          <textarea
+                            id={q.id}
+                            placeholder={q.placeholder}
+                            required={q.required}
+                            value={formData[q.id] ?? ""}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                [q.id]: e.target.value,
+                              }))
+                            }
+                            rows={3}
+                            className="type-body mt-1.5 w-full resize-y rounded-[6px] border border-border bg-transparent px-3.5 py-2.5 text-text-primary placeholder:text-text-tertiary transition-all duration-100 focus:border-primary focus:outline-none focus:shadow-[0_0_0_2px_var(--primary-focus-ring)]"
+                          />
+                        ) : (
+                          <input
+                            id={q.id}
+                            type="text"
+                            placeholder={q.placeholder}
+                            required={q.required}
+                            value={formData[q.id] ?? ""}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                [q.id]: e.target.value,
+                              }))
+                            }
+                            className="type-body mt-1.5 h-12 w-full rounded-[6px] border border-border bg-transparent px-3.5 text-text-primary placeholder:text-text-tertiary transition-all duration-100 focus:border-primary focus:outline-none focus:shadow-[0_0_0_2px_var(--primary-focus-ring)]"
+                          />
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="submit"
+                      disabled={!requiredFilled}
+                      className="h-12 w-full rounded-[6px] bg-primary text-base font-medium text-white transition-all duration-100 hover:bg-primary-hover active:bg-primary-active active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:pointer-events-none"
+                    >
+                      Submit Application
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </dialog>

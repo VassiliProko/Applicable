@@ -3,7 +3,10 @@
     "allow": [
       "Bash(npx tailwindcss:*)",
       "Bash(curl -s http://localhost:3000)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(npm run:*)",
+      "Bash(xargs grep:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

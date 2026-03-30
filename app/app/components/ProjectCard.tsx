@@ -2,6 +2,7 @@
 
 import { Project } from "@/app/lib/types";
 import { Clock } from "lucide-react";
+import FitTitle from "./FitTitle";
 
 export default function ProjectCard({
   project,
@@ -23,7 +24,7 @@ export default function ProjectCard({
       }}
       className="flex h-full cursor-pointer flex-col rounded-[12px] border border-transparent bg-surface-1 p-[18px] transition-all duration-200 hover:border-[var(--border-base)] hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
     >
-      <h3 className="type-title line-clamp-2">{project.title}</h3>
+      <FitTitle className="type-title">{project.title}</FitTitle>
 
       <div className="mt-3 aspect-[4/3] w-full overflow-hidden rounded-[8px] bg-black">
         {project.imageUrl && (
