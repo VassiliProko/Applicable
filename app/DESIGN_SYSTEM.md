@@ -256,11 +256,41 @@ Use only these values for layout margin, padding, and gap. Values in Component S
 - Inline style objects for ALL styling. <style> tag ONLY for @import, @keyframes, @media.
 - Stagger via transitionDelay: `${index * 30}ms`
 
-## 6. Visual Direction
+## 6. Blueprint Frame (Structural Decoration)
+
+A subtle crosshatch + border-line pattern applied to page sections as container guidelines. Gives the UI a techno/blueprint aesthetic without competing with content.
+
+### CSS Variables
+- `--blueprint-line`: border lines — dark: `rgba(255,255,255,0.1)`, light: `rgba(0,0,0,0.09)`
+- `--blueprint-hatch`: crosshatch fill — dark: `rgba(255,255,255,0.06)`, light: `rgba(0,0,0,0.05)`
+
+### Structure
+- **Horizontal edges**: 1px solid `--blueprint-line` on top and bottom of each framed section.
+- **Hatched strips**: 36px-wide crosshatch strips on left and right edges (matching the 36px page margin). Uses a 45deg + -45deg repeating-linear-gradient at 8px intervals with 1px lines.
+- **Vertical edges**: 1px solid `--blueprint-line` on both sides of each hatched strip (outer edge + inner edge).
+- **Adjacent frames**: when two `.blueprint-frame` sections are siblings, the shared border collapses to a single line.
+- **Navbar**: uses `border-b` with `--blueprint-line` for consistency.
+
+### Responsive Behavior
+- **Desktop (>=640px)**: full hatched strips + all border lines visible.
+- **Mobile (<640px)**: hatched fill and inner vertical lines removed. Only the outer vertical edge lines and horizontal top/bottom lines remain — preserves the structural grid feel at small sizes.
+
+### Usage
+Apply the `.blueprint-frame` class to any `<section>` element that should be framed. The hatched strips sit in the padding zone (px-9 = 36px) and do not affect content layout. `pointer-events: none` ensures no interaction interference.
+
+### When to Use
+- Page-level content sections (hero, galleries, feature blocks)
+- Any full-width section that benefits from visual containment
+
+### When NOT to Use
+- Modals, dropdowns, cards, or nested components
+- Sections that already have prominent borders or backgrounds
+
+## 7. Visual Direction
 
 **Scandinavian**: Neutral zinc backgrounds — dark, clean, minimal. Color is used sparingly: red and orange for CTAs and key moments, steel blue for links and focus. Generous padding. Rounded corners. Soft diffused shadows. Line-weight icons. Calm, breathable layouts. The UI feels quiet until a user needs guidance — then color draws the eye.
 
-## 7. Component Specifications
+## 8. Component Specifications
 
 ### Buttons
 **Primary button**
@@ -359,11 +389,11 @@ Use only these values for layout margin, padding, and gap. Values in Component S
 - exit: fade, duration 100ms, easing cubic-bezier(.4,0,1,1)
 - stack: up to 3 visible, gap 12px
 
-## 8. Accessibility
+## 9. Accessibility
 
 - WCAG AA contrast (4.5:1 body, 3:1 large). Focus: outline #2E7EA6 2px for buttons/links, box-shadow ring for inputs. Keyboard: Tab + Enter/Space. ARIA labels on icon buttons, aria-expanded on toggles, aria-live on dynamic content. Color never sole indicator.
 
-## 9. Implementation: Claude
+## 10. Implementation: Claude
 
 - Single React component, default export. All styles inline. Import only: react, recharts, lucide-react, d3, lodash, shadcn/ui. React hooks for state. No localStorage. Use recharts for all chart visualizations; use d3 only for custom calculations or layouts that recharts cannot handle.
 

@@ -94,7 +94,18 @@ export default function ProjectModal({
             <h2 id="modal-title" className="type-headline pr-8">
               {project.title}
             </h2>
-            <p className="type-body mt-2 text-text-secondary">
+
+            <div className="mt-4 aspect-[4/3] w-full overflow-hidden rounded-[10px] bg-black">
+              {project.imageUrl && (
+                <img
+                  src={project.imageUrl}
+                  alt={project.title}
+                  className="h-full w-full object-cover"
+                />
+              )}
+            </div>
+
+            <p className="type-body mt-4 text-text-secondary">
               {project.tagline}
             </p>
 

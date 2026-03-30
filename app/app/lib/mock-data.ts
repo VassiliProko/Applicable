@@ -4,9 +4,11 @@ export const projects: Project[] = [
   {
     id: "accessible-component-lib",
     title: "Accessible Component Library",
+    companyName: "Stripe",
     tagline: "Build reusable UI components that work for everyone.",
     description:
       "Design and develop a small library of accessible React components following WAI-ARIA guidelines.",
+    category: "Engineering",
     skillTags: ["React", "TypeScript", "Accessibility", "CSS"],
     difficulty: "Intermediate",
     timeCommitment: "15–20 hours",
@@ -53,9 +55,11 @@ export const projects: Project[] = [
   {
     id: "public-data-insights",
     title: "Public Data Insights Dashboard",
+    companyName: "Datadog",
     tagline: "Turn raw open data into actionable visual stories.",
     description:
       "Analyse a public dataset and produce an interactive dashboard that surfaces meaningful insights.",
+    category: "Data & Analytics",
     skillTags: ["Python", "Pandas", "Data Viz", "SQL"],
     difficulty: "Beginner",
     timeCommitment: "10–15 hours",
@@ -94,9 +98,11 @@ export const projects: Project[] = [
   {
     id: "onboarding-redesign",
     title: "Product Onboarding Redesign",
+    companyName: "Figma",
     tagline: "Reimagine how new users experience a product.",
     description:
       "Research, prototype, and test a redesigned onboarding flow for an existing product.",
+    category: "Design",
     skillTags: ["UX Research", "Figma", "Prototyping", "User Testing"],
     difficulty: "Intermediate",
     timeCommitment: "12–18 hours",
@@ -141,9 +147,11 @@ export const projects: Project[] = [
   {
     id: "rest-api-bookstore",
     title: "Bookstore REST API",
+    companyName: "Shopify",
     tagline: "Design a clean API that powers a digital bookshop.",
     description:
       "Build a fully documented RESTful API for a bookstore with auth, CRUD, and search.",
+    category: "Engineering",
     skillTags: ["Node.js", "Express", "PostgreSQL", "REST"],
     difficulty: "Intermediate",
     timeCommitment: "15–20 hours",
@@ -182,9 +190,11 @@ export const projects: Project[] = [
   {
     id: "habit-tracker-mobile",
     title: "Habit Tracker Mobile App",
+    companyName: "Headspace",
     tagline: "Help people build better habits, one day at a time.",
     description:
       "Design and build a cross-platform mobile app for tracking daily habits with streaks and reminders.",
+    category: "Mobile",
     skillTags: ["React Native", "Mobile", "UI Design", "State Management"],
     difficulty: "Advanced",
     timeCommitment: "20–30 hours",
@@ -232,9 +242,11 @@ export const projects: Project[] = [
   {
     id: "containerize-deploy",
     title: "Containerize & Deploy a Web App",
+    companyName: "Vercel",
     tagline: "Take an app from localhost to the cloud.",
     description:
       "Dockerize an existing web application and set up a CI/CD pipeline for automated deployment.",
+    category: "DevOps",
     skillTags: ["Docker", "CI/CD", "GitHub Actions", "Cloud"],
     difficulty: "Intermediate",
     timeCommitment: "10–15 hours",
@@ -274,9 +286,11 @@ export const projects: Project[] = [
   {
     id: "recommendation-engine",
     title: "Movie Recommendation Engine",
+    companyName: "Netflix",
     tagline: "Build an ML system that predicts what people love.",
     description:
       "Develop a collaborative-filtering recommendation engine using real movie rating data.",
+    category: "Data & Analytics",
     skillTags: ["Python", "Machine Learning", "scikit-learn", "Pandas"],
     difficulty: "Advanced",
     timeCommitment: "20–25 hours",
@@ -317,9 +331,11 @@ export const projects: Project[] = [
   {
     id: "technical-blog-series",
     title: "Technical Blog Series",
+    companyName: "Medium",
     tagline: "Explain complex topics so anyone can understand.",
     description:
       "Write a 3-part technical blog series that teaches a complex topic through clear, engaging prose.",
+    category: "Content",
     skillTags: ["Technical Writing", "Communication", "Research"],
     difficulty: "Beginner",
     timeCommitment: "8–12 hours",
@@ -364,9 +380,11 @@ export const projects: Project[] = [
   {
     id: "prd-feature",
     title: "Write a Product Requirements Doc",
+    companyName: "Notion",
     tagline: "Define what to build and why before anyone writes code.",
     description:
       "Research a product opportunity and deliver a professional PRD with user stories, acceptance criteria, and success metrics.",
+    category: "Product",
     skillTags: ["Product Management", "User Stories", "Research", "Strategy"],
     difficulty: "Beginner",
     timeCommitment: "8–12 hours",

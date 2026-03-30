@@ -1,16 +1,79 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { projects } from "@/app/lib/mock-data";
 import { Project } from "@/app/lib/types";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
+import FilterBar from "./FilterBar";
+
+function toggle(arr: string[], value: string) {
+  return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
+}
 
 export default function ProjectGallery() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>(
+    []
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const categories = useMemo(
+    () => [...new Set(projects.map((p) => p.category))].sort(),
+    []
+  );
+
+  const skills = useMemo(
+    () => [...new Set(projects.flatMap((p) => p.skillTags))].sort(),
+    []
+  );
+
+  const activeCount =
+    selectedCategories.length +
+    selectedSkills.length +
+    selectedDifficulties.length;
+
+  const filtered = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return projects.filter((p) => {
+      if (
+        selectedCategories.length > 0 &&
+        !selectedCategories.includes(p.category)
+      )
+        return false;
+      if (
+        selectedSkills.length > 0 &&
+        !selectedSkills.some((s) => p.skillTags.includes(s))
+      )
+        return false;
+      if (
+        selectedDifficulties.length > 0 &&
+        !selectedDifficulties.includes(p.difficulty)
+      )
+        return false;
+      if (
+        q &&
+        !p.title.toLowerCase().includes(q) &&
+        !p.tagline.toLowerCase().includes(q) &&
+        !p.skillTags.some((t) => t.toLowerCase().includes(q)) &&
+        !p.category.toLowerCase().includes(q)
+      )
+        return false;
+      return true;
+    });
+  }, [selectedCategories, selectedSkills, selectedDifficulties, searchQuery]);
+
+  const clearAll = useCallback(() => {
+    setSelectedCategories([]);
+    setSelectedSkills([]);
+    setSelectedDifficulties([]);
+    setSearchQuery("");
+  }, []);
 
   return (
-    <section id="projects" className="px-9 py-18 scroll-mt-6">
+    <section id="projects" className="blueprint-frame px-9 py-18 scroll-mt-6">
       <div className="mx-auto max-w-[1280px]">
         <h2 className="type-headline">Discover Projects</h2>
         <p className="type-body mt-2 max-w-lg text-text-secondary">
@@ -18,8 +81,25 @@ export default function ProjectGallery() {
           and prove what you can do.
         </p>
 
-        <div className="mt-10 grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project, i) => (
+        <FilterBar
+          categories={categories}
+          skills={skills}
+          selectedCategories={selectedCategories}
+          selectedSkills={selectedSkills}
+          selectedDifficulties={selectedDifficulties}
+          searchQuery={searchQuery}
+          onToggleCategory={(v) => setSelectedCategories((s) => toggle(s, v))}
+          onToggleSkill={(v) => setSelectedSkills((s) => toggle(s, v))}
+          onToggleDifficulty={(v) =>
+            setSelectedDifficulties((s) => toggle(s, v))
+          }
+          onSearchChange={setSearchQuery}
+          onClearAll={clearAll}
+          activeCount={activeCount}
+        />
+
+        <div className="mt-8 grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((project, i) => (
             <div
               key={project.id}
               style={{
@@ -31,6 +111,12 @@ export default function ProjectGallery() {
             </div>
           ))}
         </div>
+
+        {filtered.length === 0 && (
+          <p className="mt-12 text-center type-body text-text-tertiary">
+            No projects match your filters.
+          </p>
+        )}
       </div>
 
       <ProjectModal

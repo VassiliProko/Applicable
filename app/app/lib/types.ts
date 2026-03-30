@@ -3,6 +3,10 @@ export interface Project {
   title: string;
   tagline: string;
   description: string;
+  imageUrl?: string;
+  logoUrl?: string;
+  companyName: string;
+  category: string;
   skillTags: string[];
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   timeCommitment: string;

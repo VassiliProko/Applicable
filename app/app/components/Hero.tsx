@@ -3,7 +3,7 @@ import { ArrowDown } from "lucide-react";
 
 export default function Hero() {
   return (
-    <section className="flex flex-col items-center justify-center px-9 pt-18 pb-18 text-center">
+    <section className="blueprint-frame flex flex-col items-center justify-center px-9 pt-18 pb-18 text-center">
       <h1 className="type-display max-w-3xl">
         Where skills take{" "}
         <span className="italic text-primary">flight</span>
@@ -20,14 +20,27 @@ export default function Hero() {
         className="mt-10 w-full max-w-3xl rounded-lg object-cover"
         priority
       />
-      <a
-        href="#projects"
-        className="mt-8 inline-flex h-12 items-center gap-2 rounded-[6px] bg-primary px-6 font-body text-base font-medium text-white transition-all duration-100 hover:bg-primary-hover active:bg-primary-active active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-        style={{ fontFamily: "var(--font-source-sans), 'Helvetica Neue', Arial, sans-serif" }}
-      >
-        Discover Projects
-        <ArrowDown size={20} />
-      </a>
+      <div className="mt-8 rounded-[19px] bg-surface-1 p-2">
+        <div className="flex items-stretch gap-1.5">
+          <div className="btn-spin-wrapper">
+            <a
+              href="#projects"
+              className="inline-flex h-12 items-center gap-2 rounded-[9px] bg-primary px-6 font-body text-base font-medium text-white active:bg-primary-active active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              style={{ fontFamily: "var(--font-source-sans), 'Helvetica Neue', Arial, sans-serif" }}
+            >
+              Discover Projects
+              <ArrowDown size={20} />
+            </a>
+          </div>
+          <a
+            href="#"
+            className="inline-flex items-center gap-2 rounded-[9px] border-2 border-border bg-[#27272a] px-6 font-body text-base font-medium text-white transition-colors duration-100 hover:border-[#71717a] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            style={{ fontFamily: "var(--font-source-sans), 'Helvetica Neue', Arial, sans-serif" }}
+          >
+            Post a Project
+          </a>
+        </div>
+      </div>
     </section>
   );
 }

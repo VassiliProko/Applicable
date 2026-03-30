@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 :root {
+  /* Blueprint */
+  --blueprint-line: rgba(255, 255, 255, 0.1);
+  --blueprint-hatch: rgba(255, 255, 255, 0.06);
+
   /* Colors – Primary */
   --primary-500: #E8432A;
   --primary-hover: #d03a23;
@@ -49,6 +53,35 @@
   --duration-base: 200ms;
   --duration-medium: 300ms;
   --duration-large: 500ms;
+}
+
+[data-theme="light"] {
+  /* Blueprint */
+  --blueprint-line: rgba(0, 0, 0, 0.09);
+  --blueprint-hatch: rgba(0, 0, 0, 0.05);
+
+  /* Colors – Background & Surfaces */
+  --background: #ffffff;
+  --surface-1: #f4f4f5;
+  --surface-2: #e4e4e7;
+  --surface-3: #d4d4d8;
+
+  /* Colors – Text (Zinc scale, inverted) */
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-tertiary: #71717a;
+  --text-disabled: #a1a1aa;
+
+  /* Borders */
+  --border-base: rgba(0, 0, 0, 0.1);
+  --border-divider: rgba(0, 0, 0, 0.06);
+  --border-hover: rgba(0, 0, 0, 0.15);
+  --border-focus: rgba(0, 0, 0, 0.2);
+
+  /* Elevation */
+  --shadow-low: 0 1px 3px -1px rgba(0, 0, 0, 0.08), 0 3px 8px -1px rgba(0, 0, 0, 0.06);
+  --shadow-mid: 0 2px 8px -2px rgba(0, 0, 0, 0.12), 0 8px 24px -4px rgba(0, 0, 0, 0.1);
+  --shadow-high: 0 4px 18px -4px rgba(0, 0, 0, 0.18), 0 18px 53px -9px rgba(0, 0, 0, 0.14);
 }
 
 @theme inline {
@@ -148,6 +181,111 @@ body {
   font-family: var(--font-source-sans), 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* ── Spinning Border Button ── */
+
+@property --spin-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.btn-spin-wrapper {
+  --spin-angle: 0deg;
+  position: relative;
+  display: inline-flex;
+  padding: 2px;
+  background: var(--primary-500);
+  border-radius: 11px;
+  transition: box-shadow 0.3s ease;
+}
+
+.btn-spin-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--spin-angle),
+    #FFEA00 0%,
+    #FFD700 15%,
+    #FFA500 30%,
+    #FF8C00 50%,
+    #FFA500 70%,
+    #FFD700 85%,
+    #FFEA00 100%
+  );
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+  pointer-events: none;
+}
+
+.btn-spin-wrapper > a {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-spin-wrapper:hover::before {
+  opacity: 1;
+  animation: spin-border 3s cubic-bezier(0.2, 0, 0.1, 1) forwards;
+}
+
+.btn-spin-wrapper:hover {
+  animation: settle-glow 0.6s 3s ease-out forwards;
+}
+
+@keyframes spin-border {
+  from { --spin-angle: 0deg; }
+  to { --spin-angle: 360deg; }
+}
+
+@keyframes settle-glow {
+  to {
+    box-shadow: 0 0 12px 3px rgba(255, 215, 0, 0.4),
+                0 0 4px 1px rgba(255, 165, 0, 0.25);
+  }
+}
+
+[data-theme="light"] .btn-spin-wrapper::before {
+  background: conic-gradient(
+    from var(--spin-angle),
+    #FFF176 0%,
+    #FFE082 15%,
+    #FFD54F 30%,
+    #FFCA28 50%,
+    #FFD54F 70%,
+    #FFE082 85%,
+    #FFF176 100%
+  );
+}
+
+[data-theme="light"] .btn-spin-wrapper:hover {
+  animation: settle-glow-light 0.6s 3s ease-out forwards;
+}
+
+@keyframes settle-glow-light {
+  to {
+    box-shadow: 0 0 14px 4px rgba(255, 224, 130, 0.5),
+                0 0 5px 2px rgba(255, 202, 40, 0.35);
+  }
+}
+
+/* ── Dropdown ── */
+
+.dropdown-enter {
+  animation: dropdown-in var(--duration-base) var(--ease-micro);
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* ── Dialog ── */
 
 dialog::backdrop {
@@ -167,5 +305,75 @@ dialog[open] {
   to {
     opacity: 1;
     transform: scale(1) translateY(0);
+  }
+}
+
+/* ── Theme transition ── */
+
+[data-theme="light"] .logo-invert {
+  filter: invert(1);
+}
+
+/* ── Blueprint Frame ── */
+
+.blueprint-frame {
+  position: relative;
+  border-top: 1px solid var(--blueprint-line);
+  border-bottom: 1px solid var(--blueprint-line);
+}
+
+/* Collapse shared border between adjacent frames */
+.blueprint-frame + .blueprint-frame {
+  border-top: none;
+}
+
+/* Hatched edge strips */
+.blueprint-frame::before,
+.blueprint-frame::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 36px;
+  background:
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 7px,
+      var(--blueprint-hatch) 7px,
+      var(--blueprint-hatch) 8px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 7px,
+      var(--blueprint-hatch) 7px,
+      var(--blueprint-hatch) 8px
+    );
+  border-left: 1px solid var(--blueprint-line);
+  border-right: 1px solid var(--blueprint-line);
+  pointer-events: none;
+}
+
+.blueprint-frame::before {
+  left: 0;
+}
+
+.blueprint-frame::after {
+  right: 0;
+}
+
+/* Mobile: drop hatching, keep edge lines */
+@media (max-width: 639px) {
+  .blueprint-frame::before,
+  .blueprint-frame::after {
+    width: 0;
+    background: none;
+  }
+  .blueprint-frame::before {
+    border-right: none;
+  }
+  .blueprint-frame::after {
+    border-left: none;
   }
 }
