@@ -6,6 +6,7 @@ import { Project } from "@/app/lib/types";
 import { projects } from "@/app/lib/mock-data";
 import { Clock, FileText, ArrowUpDown } from "lucide-react";
 import FitTitle from "./FitTitle";
+import ProgressGrid from "./ProgressGrid";
 import ProjectModal from "./ProjectModal";
 
 const staticTabs = ["Ongoing", "Applied", "Posted"] as const;
@@ -217,50 +218,33 @@ export default function ProfileProjects() {
                       {project.title}
                     </FitTitle>
 
-                    <div className="mt-3 aspect-4/3 w-full overflow-hidden rounded-lg bg-black">
-                      {project.imageUrl && (
-                        <img
-                          src={project.imageUrl}
-                          alt={project.title}
-                          className="h-full w-full object-cover"
-                        />
-                      )}
-                    </div>
+                    {/* Grid for ongoing, image for applied */}
+                    {activeTab === "Ongoing" ? (
+                      (() => {
+                        const totalMilestones = project.details.learningOutcomes.length;
+                        const completed = progress[project.id] || 0;
+                        const percent = totalMilestones > 0 ? Math.round((completed / totalMilestones) * 100) : 0;
+                        return (
+                          <div className="mt-3">
+                            <ProgressGrid percent={percent} />
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="mt-3 aspect-4/3 w-full overflow-hidden rounded-lg bg-black">
+                        {project.imageUrl && (
+                          <img
+                            src={project.imageUrl}
+                            alt={project.title}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </div>
+                    )}
 
                     <p className="type-body mt-3 line-clamp-2 text-text-secondary">
                       {project.tagline}
                     </p>
-
-                    {/* Progress bar for ongoing projects */}
-                    {activeTab === "Ongoing" &&
-                      (() => {
-                        const totalMilestones =
-                          project.details.learningOutcomes.length;
-                        const completed = progress[project.id] || 0;
-                        const percent =
-                          totalMilestones > 0
-                            ? Math.round((completed / totalMilestones) * 100)
-                            : 0;
-
-                        return (
-                          <div className="mt-3">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="type-caption text-text-tertiary">
-                                Progress
-                              </span>
-                              <span className="type-caption font-medium text-text-secondary">
-                                {percent}%
-                              </span>
-                            </div>
-                            <div className="h-1.5 w-full rounded-full bg-surface-3">
-                              <div
-                                className="h-full rounded-full bg-primary transition-all duration-500"
-                                style={{ width: `${percent}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })()}
 
                     <div className="mt-auto flex items-center justify-between pt-4">
                       <div className="flex items-center gap-2">
