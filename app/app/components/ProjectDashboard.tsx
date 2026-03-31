@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Project } from "@/app/lib/types";
+import { useTheme } from "./ThemeProvider";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -90,6 +91,7 @@ const difficultyColor: Record<string, string> = {
 };
 
 export default function ProjectDashboard({ project }: { project: Project }) {
+  const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<DashboardTab>("Brief");
 
   // Milestones from learning outcomes with staggered deadlines
@@ -828,7 +830,7 @@ export default function ProjectDashboard({ project }: { project: Project }) {
             Back to Profile
           </Link>
 
-          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+          <div className="flex items-center gap-4">
             {/* Company logo */}
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white">
               {project.logoUrl ? (
@@ -844,66 +846,68 @@ export default function ProjectDashboard({ project }: { project: Project }) {
               )}
             </div>
 
-            <div className="flex-1">
+            <div>
               <h1 className="type-headline text-text-primary">
                 {project.title}
               </h1>
               <p className="type-body text-text-secondary mt-1">
                 {project.companyName}
               </p>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <span
+              className={`type-caption inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium ${difficultyColor[project.difficulty]}`}
+            >
+              <Signal size={14} />
+              {project.difficulty}
+            </span>
+            <span className="type-caption inline-flex items-center gap-1 text-text-tertiary">
+              <Clock size={14} />
+              {project.timeCommitment}
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {project.skillTags.map((tag) => (
                 <span
-                  className={`type-caption inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium ${difficultyColor[project.difficulty]}`}
+                  key={tag}
+                  className="type-caption rounded-full bg-accent/10 px-2.5 py-0.5 font-medium text-accent"
                 >
-                  <Signal size={14} />
-                  {project.difficulty}
+                  {tag}
                 </span>
-                <span className="type-caption inline-flex items-center gap-1 text-text-tertiary">
-                  <Clock size={14} />
-                  {project.timeCommitment}
-                </span>
-                <div className="flex gap-1.5">
-                  {project.skillTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="type-caption rounded-full bg-accent/10 px-2.5 py-0.5 font-medium text-accent"
-                    >
-                      {tag}
-                    </span>
-                  ))}
+              ))}
+            </div>
+          </div>
+
+          {/* Milestone Progress Bar */}
+          <div className="mt-6 py-5">
+            <p className="type-subhead text-text-secondary mb-4">
+              Progress <span className="text-text-primary">{progressPercent}%</span>
+            </p>
+
+            {/* Icons row */}
+            <div className="flex mb-2">
+              {milestones.map((m) => (
+                <div key={m.id} className="flex-1 flex justify-end">
+                  <img
+                    src={m.done ? "/icons/Completed icon.png" : theme === "light" ? "/icons/Incomplete icon_dark.png" : "/icons/Incomplete icon.png"}
+                    alt={m.done ? "Completed" : "Incomplete"}
+                    className="w-7 h-7 object-contain"
+                  />
                 </div>
-              </div>
+              ))}
             </div>
 
-            {/* Progress circle */}
-            <div className="flex flex-col items-center gap-1">
-              <div className="relative h-16 w-16">
-                <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15.9"
-                    fill="none"
-                    stroke="var(--surface-3)"
-                    strokeWidth="3"
-                  />
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="15.9"
-                    fill="none"
-                    stroke="var(--primary-500)"
-                    strokeWidth="3"
-                    strokeDasharray={`${progressPercent} ${100 - progressPercent}`}
-                    strokeLinecap="round"
-                    className="transition-all duration-500"
-                  />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-text-primary">
-                  {progressPercent}%
-                </span>
-              </div>
-              <span className="type-caption text-text-tertiary">Progress</span>
+            {/* Bar track */}
+            <div className="h-2 rounded-full bg-surface-3">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-700"
+                style={{
+                  width: completedMilestones === 0
+                    ? "0%"
+                    : `${(completedMilestones / milestones.length) * 100}%`,
+                }}
+              />
             </div>
           </div>
 
@@ -911,9 +915,9 @@ export default function ProjectDashboard({ project }: { project: Project }) {
       </div>
 
       {/* Sidebar Tabs + Content */}
-      <div className="mx-auto max-w-7xl px-6 mt-8 flex gap-8">
+      <div className="mx-auto max-w-7xl px-6 mt-8 flex gap-0">
         {/* Sidebar Tabs */}
-        <nav className="hidden md:flex flex-col gap-1 rounded-lg bg-surface-1 p-1 w-48 shrink-0 self-start sticky top-24">
+        <nav className="hidden md:flex flex-col gap-1 p-1 w-48 shrink-0 self-start sticky top-24 mr-8 pr-8 border-r border-[var(--border-base)] min-h-[calc(100vh-200px)]">
           {tabs.map((tab) => (
             <button
               key={tab}
@@ -950,15 +954,15 @@ export default function ProjectDashboard({ project }: { project: Project }) {
         <div className="flex-1 min-w-0">
         {/* Brief Tab */}
         {activeTab === "Brief" && (
-          <div className="max-w-3xl space-y-8">
-            <div>
+          <div className="max-w-3xl divide-y divide-[var(--border-base)]">
+            <div className="pb-8">
               <h2 className="type-title text-text-primary">Overview</h2>
               <p className="type-body mt-3 text-text-secondary">
                 {project.details.overview}
               </p>
             </div>
 
-            <div>
+            <div className="py-8">
               <h2 className="type-title text-text-primary">
                 What You&apos;ll Learn
               </h2>
@@ -978,7 +982,7 @@ export default function ProjectDashboard({ project }: { project: Project }) {
               </ul>
             </div>
 
-            <div>
+            <div className="py-8">
               <h2 className="type-title text-text-primary">Prerequisites</h2>
               <ul className="mt-3 space-y-3">
                 {project.details.prerequisites.map((prereq) => (
@@ -994,10 +998,12 @@ export default function ProjectDashboard({ project }: { project: Project }) {
             </div>
 
             {project.tagline && (
-              <div className="rounded-xl border border-border bg-surface-1 p-6">
-                <p className="type-body text-text-secondary italic">
-                  &ldquo;{project.tagline}&rdquo;
-                </p>
+              <div className="pt-8">
+                <div className="rounded-xl border border-border bg-surface-1 p-6">
+                  <p className="type-body text-text-secondary italic">
+                    &ldquo;{project.tagline}&rdquo;
+                  </p>
+                </div>
               </div>
             )}
           </div>
@@ -1005,56 +1011,37 @@ export default function ProjectDashboard({ project }: { project: Project }) {
 
         {/* Milestones & Tasks Tab */}
         {activeTab === "Milestones & Tasks" && (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-6">
-              {/* Milestones */}
-              <section className="rounded-xl border border-border bg-surface-1 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="type-title text-text-primary">Milestones</h2>
-                  <span className="type-caption text-text-tertiary">
-                    {completedMilestones}/{milestones.length} completed
-                  </span>
-                </div>
+          <div className="grid gap-8 lg:grid-cols-2">
+            {/* Milestones */}
+            <div className="lg:border-r lg:border-[var(--border-base)] lg:pr-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="type-title text-text-primary">Milestones</h2>
+                <span className="type-caption text-text-tertiary">
+                  {completedMilestones}/{milestones.length} completed
+                </span>
+              </div>
 
-                <div className="h-2 w-full rounded-full bg-surface-3 mb-5">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
+              <ul className="space-y-3">
+                {milestones.map((milestone) => {
+                  const overdue = !milestone.done && isOverdue(milestone.deadline);
+                  const dueSoon = !milestone.done && !overdue && isDueSoon(milestone.deadline);
 
-                <ul className="space-y-3">
-                  {milestones.map((milestone) => {
-                    const overdue = !milestone.done && isOverdue(milestone.deadline);
-                    const dueSoon = !milestone.done && !overdue && isDueSoon(milestone.deadline);
-
-                    return (
+                  return (
                     <li
                       key={milestone.id}
                       className="flex items-start gap-3 group"
                     >
                       {milestone.done ? (
-                        <CheckCircle2
-                          size={20}
-                          className="mt-0.5 shrink-0 text-success"
-                        />
+                        <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-success" />
                       ) : overdue ? (
-                        <AlertTriangle
-                          size={20}
-                          className="mt-0.5 shrink-0 text-error"
-                        />
+                        <AlertTriangle size={20} className="mt-0.5 shrink-0 text-error" />
                       ) : (
-                        <Circle
-                          size={20}
-                          className="mt-0.5 shrink-0 text-text-disabled"
-                        />
+                        <Circle size={20} className="mt-0.5 shrink-0 text-text-disabled" />
                       )}
                       <div className="flex-1">
                         <span
                           className={`type-body ${
-                            milestone.done
-                              ? "text-text-tertiary line-through"
-                              : "text-text-primary"
+                            milestone.done ? "text-text-tertiary line-through" : "text-text-primary"
                           }`}
                         >
                           {milestone.text}
@@ -1062,12 +1049,7 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                         <div className="flex items-center gap-2 mt-0.5">
                           {milestone.done && milestone.report ? (
                             <button
-                              onClick={() =>
-                                setViewingReport({
-                                  milestone,
-                                  report: milestone.report!,
-                                })
-                              }
+                              onClick={() => setViewingReport({ milestone, report: milestone.report! })}
                               className="type-caption text-accent hover:underline text-left"
                             >
                               View Report
@@ -1075,11 +1057,7 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                           ) : (
                             <span
                               className={`type-caption inline-flex items-center gap-1 ${
-                                overdue
-                                  ? "text-error"
-                                  : dueSoon
-                                    ? "text-warning"
-                                    : "text-text-tertiary"
+                                overdue ? "text-error" : dueSoon ? "text-warning" : "text-text-tertiary"
                               }`}
                             >
                               <Calendar size={11} />
@@ -1100,60 +1078,39 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                         </button>
                       )}
                     </li>
-                    );
-                  })}
-                </ul>
-              </section>
+                  );
+                })}
+              </ul>
+            </div>
 
-              {/* Tasks */}
-              <section className="rounded-xl border border-border bg-surface-1 p-6">
-                <h2 className="type-title text-text-primary mb-4">Tasks</h2>
+            {/* Tasks */}
+            <div>
+              <h2 className="type-title text-text-primary mb-4">Tasks</h2>
 
-                <ul className="space-y-2">
-                  {tasks.map((task) => {
-                    const taskOverdue = !task.done && isOverdue(task.deadline);
-                    const taskDueSoon = !task.done && !taskOverdue && isDueSoon(task.deadline);
+              <ul className="space-y-2">
+                {tasks.map((task) => {
+                  const taskOverdue = !task.done && isOverdue(task.deadline);
+                  const taskDueSoon = !task.done && !taskOverdue && isDueSoon(task.deadline);
 
-                    return (
-                    <li
-                      key={task.id}
-                      className="flex items-center gap-3 group"
-                    >
-                      <button
-                        onClick={() => toggleTask(task.id)}
-                        className="shrink-0"
-                      >
+                  return (
+                    <li key={task.id} className="flex items-center gap-3 group">
+                      <button onClick={() => toggleTask(task.id)} className="shrink-0">
                         {task.done ? (
                           <CheckCircle2 size={18} className="text-success" />
                         ) : taskOverdue ? (
                           <AlertTriangle size={18} className="text-error" />
                         ) : (
-                          <Circle
-                            size={18}
-                            className="text-text-disabled group-hover:text-text-secondary transition-colors"
-                          />
+                          <Circle size={18} className="text-text-disabled group-hover:text-text-secondary transition-colors" />
                         )}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <span
-                          className={`type-body ${
-                            task.done
-                              ? "text-text-tertiary line-through"
-                              : "text-text-primary"
-                          }`}
-                        >
+                        <span className={`type-body ${task.done ? "text-text-tertiary line-through" : "text-text-primary"}`}>
                           {task.text}
                         </span>
                       </div>
                       <span
                         className={`shrink-0 type-caption inline-flex items-center gap-1 ${
-                          task.done
-                            ? "text-text-disabled"
-                            : taskOverdue
-                              ? "text-error"
-                              : taskDueSoon
-                                ? "text-warning"
-                                : "text-text-tertiary"
+                          task.done ? "text-text-disabled" : taskOverdue ? "text-error" : taskDueSoon ? "text-warning" : "text-text-tertiary"
                         }`}
                       >
                         <Calendar size={11} />
@@ -1166,76 +1123,42 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                         <Trash2 size={14} />
                       </button>
                     </li>
-                    );
-                  })}
-                </ul>
+                  );
+                })}
+              </ul>
 
-                <div className="mt-4 flex gap-2">
-                  <input
-                    value={newTask}
-                    onChange={(e) => setNewTask(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && addTask()}
-                    placeholder="Add a task..."
-                    className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none"
-                  />
-                  <input
-                    type="date"
-                    value={newTaskDeadline}
-                    onChange={(e) => setNewTaskDeadline(e.target.value)}
-                    className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none"
-                  />
-                  <button
-                    onClick={addTask}
-                    disabled={!newTask.trim()}
-                    className="flex items-center gap-1 rounded-lg bg-surface-3 px-3 py-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors disabled:opacity-40"
-                  >
-                    <Plus size={14} />
-                    Add
-                  </button>
-                </div>
-              </section>
-            </div>
-
-            {/* Activity Sidebar */}
-            <div>
-              <section className="rounded-xl border border-border bg-surface-1 p-6">
-                <h2 className="type-title text-text-primary mb-4">Activity</h2>
-
-                <ul className="space-y-4">
-                  {activity.map((item, i) => (
-                    <li key={item.id} className="flex gap-3">
-                      <div className="flex flex-col items-center">
-                        <CircleDot
-                          size={16}
-                          className={
-                            i === activity.length - 1
-                              ? "text-primary shrink-0"
-                              : "text-text-disabled shrink-0"
-                          }
-                        />
-                        {i < activity.length - 1 && (
-                          <div className="w-px flex-1 bg-border mt-1" />
-                        )}
-                      </div>
-                      <div className="pb-4">
-                        <p className="text-sm text-text-primary">{item.text}</p>
-                        <p className="type-caption text-text-tertiary">
-                          {item.date}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </section>
+              <div className="mt-4 flex gap-2">
+                <input
+                  value={newTask}
+                  onChange={(e) => setNewTask(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addTask()}
+                  placeholder="Add a task..."
+                  className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none"
+                />
+                <input
+                  type="date"
+                  value={newTaskDeadline}
+                  onChange={(e) => setNewTaskDeadline(e.target.value)}
+                  className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none"
+                />
+                <button
+                  onClick={addTask}
+                  disabled={!newTask.trim()}
+                  className="flex items-center gap-1 rounded-lg bg-surface-3 px-3 py-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors disabled:opacity-40"
+                >
+                  <Plus size={14} />
+                  Add
+                </button>
+              </div>
             </div>
           </div>
         )}
 
         {/* Submission Tab */}
         {activeTab === "Submission" && (
-          <div className="max-w-3xl space-y-6">
+          <div className="max-w-3xl divide-y divide-[var(--border-base)]">
             {/* Deliverables */}
-            <section className="rounded-xl border border-border bg-surface-1 p-6">
+            <div className="pb-8">
               <h2 className="type-title text-text-primary mb-2">
                 Deliverables
               </h2>
@@ -1251,10 +1174,7 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                       key={d.id}
                       className="flex items-center gap-3 rounded-lg border border-border bg-surface-2 px-4 py-3"
                     >
-                      <LinkIcon
-                        size={16}
-                        className="shrink-0 text-accent"
-                      />
+                      <LinkIcon size={16} className="shrink-0 text-accent" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-text-primary truncate">
                           {d.title}
@@ -1301,10 +1221,10 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                   Add
                 </button>
               </div>
-            </section>
+            </div>
 
             {/* Final Submission */}
-            <section className="rounded-xl border border-border bg-surface-1 p-6">
+            <div className="py-8">
               <h2 className="type-title text-text-primary mb-2">
                 Final Submission
               </h2>
@@ -1313,21 +1233,13 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                 deliverables, submit your project for review.
               </p>
 
-              <div className="rounded-lg border border-border bg-surface-2 p-4 mb-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-text-secondary">
-                    Milestones completed
-                  </span>
-                  <span className="text-sm font-medium text-text-primary">
-                    {completedMilestones}/{milestones.length}
-                  </span>
-                </div>
-                <div className="mt-2 h-2 w-full rounded-full bg-surface-3">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
+              <div className="flex items-center justify-between mb-5">
+                <span className="type-body text-text-secondary">
+                  Milestones completed
+                </span>
+                <span className="type-body font-medium text-text-primary">
+                  {completedMilestones}/{milestones.length}
+                </span>
               </div>
 
               <button
@@ -1346,7 +1258,7 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                   submit.
                 </p>
               )}
-            </section>
+            </div>
           </div>
         )}
 
