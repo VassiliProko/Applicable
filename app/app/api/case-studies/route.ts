@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   if (caseStudyId) {
     const { data, error } = await supabase
       .from("case_studies")
-      .select("id, project_id, project_title, company_name, sections, created_at")
+      .select("id, project_id, project_title, company_name, introduction, sections, links, team, created_at")
       .eq("id", caseStudyId)
       .eq("user_id", session.user.id)
       .single();
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await supabase
     .from("case_studies")
-    .select("id, project_id, project_title, company_name, sections, created_at")
+    .select("id, project_id, project_title, company_name, introduction, sections, links, team, created_at")
     .eq("user_id", session.user.id)
     .order("created_at", { ascending: false });
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { projectId, projectTitle, companyName, sections } =
+  const { projectId, projectTitle, companyName, introduction, sections, links, team } =
     await request.json();
 
   if (!projectId || !projectTitle || !sections?.length) {
@@ -67,7 +67,10 @@ export async function POST(request: Request) {
       project_id: projectId,
       project_title: projectTitle,
       company_name: companyName || "",
+      introduction: introduction || "",
       sections,
+      links: links || [],
+      team: team || [],
     },
     { onConflict: "project_id" }
   );
@@ -76,7 +79,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to publish" }, { status: 500 });
   }
 
-  // Get the actual ID
   const { data: row } = await supabase
     .from("case_studies")
     .select("id")

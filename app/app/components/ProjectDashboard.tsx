@@ -25,6 +25,13 @@ import {
   Calendar,
   AlertTriangle,
   Pencil,
+  GripVertical,
+  Type,
+  AlignLeft,
+  ListChecks,
+  Trash2 as TrashIcon,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 
 interface MilestoneReport {
@@ -126,12 +133,50 @@ export default function ProjectDashboard({ project }: { project: Project }) {
       })
       .catch(() => {});
 
-    // Check if case study is already posted
+    // Check if case study is already posted, and load intro/links
     fetch(`/api/case-studies`)
       .then((res) => res.json())
-      .then((studies: { project_id: string }[]) => {
-        if (Array.isArray(studies) && studies.some((s) => s.project_id === project.id)) {
+      .then((studies: { project_id: string; introduction?: string; sections?: { type?: string; customId?: string; milestoneId?: string; blocks?: { id: string; type: string; content: string; reportId?: string }[] }[]; links?: { title: string; url: string }[]; team?: { name: string; role: string; email: string; avatarSeed: string }[] }[]) => {
+        if (!Array.isArray(studies)) return;
+        const existing = studies.find((s) => s.project_id === project.id);
+        if (existing) {
           setCaseStudyPosted(true);
+          if (existing.introduction) setCaseStudyIntro(existing.introduction);
+          if (existing.links && existing.links.length > 0) setCaseStudyLinks(existing.links);
+          if (existing.team && existing.team.length > 0) {
+            const roles: Record<string, string> = {};
+            existing.team.forEach((t) => {
+              const match = teamMembers.find((m) => m.name === t.name);
+              if (match) roles[match.id] = t.role;
+            });
+            setCaseStudyTeamRoles((prev) => ({ ...prev, ...roles }));
+          }
+          // Restore custom sections and section order
+          if (existing.sections && existing.sections.length > 0) {
+            const restoredCustom: CustomSection[] = [];
+            const restoredOrder: string[] = [];
+
+            existing.sections.forEach((s) => {
+              if (s.type === "custom" && s.customId && s.blocks) {
+                restoredCustom.push({
+                  id: s.customId,
+                  blocks: s.blocks.map((b) => ({
+                    id: b.id || `block-${Date.now()}-${Math.random()}`,
+                    type: b.type as CaseStudyBlock["type"],
+                    content: b.content,
+                    reportId: b.reportId,
+                  })),
+                  saved: true,
+                });
+                restoredOrder.push(s.customId);
+              } else if (s.milestoneId) {
+                restoredOrder.push(s.milestoneId);
+              }
+            });
+
+            if (restoredCustom.length > 0) setCustomSections(restoredCustom);
+            if (restoredOrder.length > 0) setSectionOrder(restoredOrder);
+          }
         }
       })
       .catch(() => {});
@@ -240,6 +285,18 @@ export default function ProjectDashboard({ project }: { project: Project }) {
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [caseStudyPosted, setCaseStudyPosted] = useState(false);
   const [caseStudyDirty, setCaseStudyDirty] = useState(false);
+  const [caseStudyIntro, setCaseStudyIntro] = useState("");
+  const [editingIntro, setEditingIntro] = useState(false);
+  const [caseStudyLinks, setCaseStudyLinks] = useState<{ title: string; url: string }[]>([]);
+  const [caseStudyTeamRoles, setCaseStudyTeamRoles] = useState<Record<string, string>>(
+    () => {
+      const initial: Record<string, string> = {};
+      teamMembers.forEach((m) => { initial[m.id] = m.role; });
+      return initial;
+    }
+  );
+  const [newLinkTitle, setNewLinkTitle] = useState("");
+  const [newLinkUrl, setNewLinkUrl] = useState("");
 
   const completedMilestones = milestones.filter((m) => m.done).length;
   const progressPercent = Math.round(
@@ -434,22 +491,253 @@ export default function ProjectDashboard({ project }: { project: Project }) {
     }
   }
 
-  const caseStudySections = milestones.filter((m) => m.done && m.report);
+  const completedSections = milestones.filter((m) => m.done && m.report);
+  const [sectionOrder, setSectionOrder] = useState<string[]>([]);
+  const [draggedSection, setDraggedSection] = useState<string | null>(null);
+  const [dragOverSection, setDragOverSection] = useState<string | null>(null);
+
+  // Custom sections
+  interface CaseStudyBlock {
+    id: string;
+    type: "report" | "title" | "text" | "image";
+    content: string;
+    reportId?: string;
+  }
+
+  interface CustomSection {
+    id: string;
+    blocks: CaseStudyBlock[];
+    saved: boolean;
+  }
+
+  const [customSections, setCustomSections] = useState<CustomSection[]>([]);
+  const [editingCustom, setEditingCustom] = useState<string | null>(null);
+  const [uploadingBlock, setUploadingBlock] = useState(false);
+  const [showReportPicker, setShowReportPicker] = useState<string | null>(null);
+  const [draggedBlock, setDraggedBlock] = useState<{ sectionId: string; blockId: string } | null>(null);
+  const [dragOverBlock, setDragOverBlock] = useState<string | null>(null);
+
+  // Unified section list: milestone sections + custom sections, ordered
+  type UnifiedSection =
+    | { kind: "milestone"; id: string; milestone: Milestone }
+    | { kind: "custom"; id: string; section: CustomSection };
+
+  const allSections: UnifiedSection[] = (() => {
+    const milestoneSections: UnifiedSection[] = completedSections.map((m) => ({
+      kind: "milestone" as const,
+      id: m.id,
+      milestone: m,
+    }));
+    const customs: UnifiedSection[] = customSections
+      .filter((s) => s.saved)
+      .map((s) => ({
+        kind: "custom" as const,
+        id: s.id,
+        section: s,
+      }));
+    const all = [...milestoneSections, ...customs];
+
+    if (sectionOrder.length === 0) return all;
+
+    const ordered: UnifiedSection[] = [];
+    for (const id of sectionOrder) {
+      const found = all.find((s) => s.id === id);
+      if (found) ordered.push(found);
+    }
+    for (const s of all) {
+      if (!sectionOrder.includes(s.id)) ordered.push(s);
+    }
+    return ordered;
+  })();
+
+  // Keep caseStudySections for backward compat in publishCaseStudy
+  const caseStudySections = allSections
+    .filter((s): s is UnifiedSection & { kind: "milestone" } => s.kind === "milestone")
+    .map((s) => s.milestone);
+
+  function addCustomSection() {
+    const id = `custom-${Date.now()}`;
+    setCustomSections((prev) => [
+      ...prev,
+      { id, blocks: [], saved: false },
+    ]);
+    setEditingCustom(id);
+  }
+
+  function addBlock(sectionId: string, type: CaseStudyBlock["type"], content = "", reportId?: string) {
+    setCustomSections((prev) =>
+      prev.map((s) =>
+        s.id === sectionId
+          ? {
+              ...s,
+              blocks: [
+                ...s.blocks,
+                { id: `block-${Date.now()}`, type, content, reportId },
+              ],
+            }
+          : s
+      )
+    );
+  }
+
+  function updateBlock(sectionId: string, blockId: string, content: string) {
+    setCustomSections((prev) =>
+      prev.map((s) =>
+        s.id === sectionId
+          ? {
+              ...s,
+              blocks: s.blocks.map((b) =>
+                b.id === blockId ? { ...b, content } : b
+              ),
+            }
+          : s
+      )
+    );
+  }
+
+  function removeBlock(sectionId: string, blockId: string) {
+    setCustomSections((prev) =>
+      prev.map((s) =>
+        s.id === sectionId
+          ? { ...s, blocks: s.blocks.filter((b) => b.id !== blockId) }
+          : s
+      )
+    );
+  }
+
+  function moveBlock(sectionId: string, blockId: string, direction: "up" | "down") {
+    setCustomSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== sectionId) return s;
+        const idx = s.blocks.findIndex((b) => b.id === blockId);
+        if (idx < 0) return s;
+        const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+        if (targetIdx < 0 || targetIdx >= s.blocks.length) return s;
+        const newBlocks = [...s.blocks];
+        [newBlocks[idx], newBlocks[targetIdx]] = [newBlocks[targetIdx], newBlocks[idx]];
+        return { ...s, blocks: newBlocks };
+      })
+    );
+  }
+
+  function handleBlockDrop(sectionId: string, targetBlockId: string) {
+    if (!draggedBlock || draggedBlock.sectionId !== sectionId || draggedBlock.blockId === targetBlockId) {
+      setDraggedBlock(null);
+      setDragOverBlock(null);
+      return;
+    }
+    setCustomSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== sectionId) return s;
+        const fromIdx = s.blocks.findIndex((b) => b.id === draggedBlock.blockId);
+        const toIdx = s.blocks.findIndex((b) => b.id === targetBlockId);
+        if (fromIdx < 0 || toIdx < 0) return s;
+        const newBlocks = [...s.blocks];
+        const [moved] = newBlocks.splice(fromIdx, 1);
+        newBlocks.splice(toIdx, 0, moved);
+        return { ...s, blocks: newBlocks };
+      })
+    );
+    setDraggedBlock(null);
+    setDragOverBlock(null);
+  }
+
+  function saveCustomSection(sectionId: string) {
+    setCustomSections((prev) =>
+      prev.map((s) => (s.id === sectionId ? { ...s, saved: true } : s))
+    );
+    setEditingCustom(null);
+    if (caseStudyPosted) setCaseStudyDirty(true);
+  }
+
+  function deleteCustomSection(sectionId: string) {
+    setCustomSections((prev) => prev.filter((s) => s.id !== sectionId));
+    setSectionOrder((prev) => prev.filter((id) => id !== sectionId));
+    setEditingCustom(null);
+    if (caseStudyPosted) setCaseStudyDirty(true);
+  }
+
+  async function handleBlockImageUpload(sectionId: string, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBlock(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    if (res.ok) {
+      const data = await res.json();
+      addBlock(sectionId, "image", data.url);
+    }
+    setUploadingBlock(false);
+    e.target.value = "";
+  }
+
+  function handleDragStart(id: string) {
+    setDraggedSection(id);
+  }
+
+  function handleDragOver(e: React.DragEvent, id: string) {
+    e.preventDefault();
+    if (id !== draggedSection) setDragOverSection(id);
+  }
+
+  function handleDragLeave() {
+    setDragOverSection(null);
+  }
+
+  function handleDrop(targetId: string) {
+    if (!draggedSection || draggedSection === targetId) {
+      setDraggedSection(null);
+      setDragOverSection(null);
+      return;
+    }
+
+    const currentOrder = allSections.map((s) => s.id);
+    const fromIndex = currentOrder.indexOf(draggedSection);
+    const toIndex = currentOrder.indexOf(targetId);
+
+    const newOrder = [...currentOrder];
+    newOrder.splice(fromIndex, 1);
+    newOrder.splice(toIndex, 0, draggedSection);
+
+    setSectionOrder(newOrder);
+    setDraggedSection(null);
+    setDragOverSection(null);
+    if (caseStudyPosted) setCaseStudyDirty(true);
+  }
+
+  function handleDragEnd() {
+    setDraggedSection(null);
+    setDragOverSection(null);
+  }
   const [publishingCaseStudy, setPublishingCaseStudy] = useState(false);
 
   async function publishCaseStudy() {
-    if (caseStudySections.length === 0) return;
+    if (allSections.length === 0) return;
     setPublishingCaseStudy(true);
 
-    const sections = caseStudySections.map((m) => {
-      const section = getCaseStudySection(m);
-      return {
-        milestoneId: m.id,
-        title: m.text,
-        summary: section.summary,
-        details: section.details,
-        files: m.report?.files || [],
-      };
+    const sections = allSections.map((s) => {
+      if (s.kind === "milestone") {
+        const section = getCaseStudySection(s.milestone);
+        return {
+          type: "milestone" as const,
+          milestoneId: s.milestone.id,
+          title: s.milestone.text,
+          summary: section.summary,
+          details: section.details,
+          files: s.milestone.report?.files || [],
+        };
+      } else {
+        return {
+          type: "custom" as const,
+          customId: s.section.id,
+          title: "",
+          summary: "",
+          details: "",
+          files: [] as { name: string; type: string; url: string }[],
+          blocks: s.section.blocks,
+        };
+      }
     });
 
     const res = await fetch("/api/case-studies", {
@@ -459,7 +747,15 @@ export default function ProjectDashboard({ project }: { project: Project }) {
         projectId: project.id,
         projectTitle: project.title,
         companyName: project.companyName,
+        introduction: caseStudyIntro,
         sections,
+        links: caseStudyLinks,
+        team: teamMembers.map((m) => ({
+          name: m.name,
+          role: caseStudyTeamRoles[m.id] || m.role,
+          email: m.email,
+          avatarSeed: m.avatarSeed,
+        })),
       }),
     });
 
@@ -1051,12 +1347,12 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                   {project.title}
                 </h2>
                 <p className="type-body text-text-tertiary mt-1">
-                  {caseStudySections.length === 0
-                    ? "Complete milestones to start building your case study."
-                    : `${caseStudySections.length} section${caseStudySections.length !== 1 ? "s" : ""}`}
+                  {allSections.length === 0
+                    ? "Complete milestones or add sections to build your case study."
+                    : `${allSections.length} section${allSections.length !== 1 ? "s" : ""}`}
                 </p>
               </div>
-              {caseStudySections.length > 0 && (
+              {allSections.length > 0 && (
                 <button
                   onClick={publishCaseStudy}
                   disabled={(caseStudyPosted && !caseStudyDirty) || publishingCaseStudy}
@@ -1095,26 +1391,91 @@ export default function ProjectDashboard({ project }: { project: Project }) {
               </div>
             )}
 
+            {/* Introduction */}
+            <section className="rounded-xl border border-border bg-surface-1 p-6 mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="type-subhead text-text-primary">Introduction</h3>
+                {!editingIntro && (
+                  <button
+                    onClick={() => setEditingIntro(true)}
+                    className="flex items-center gap-1 text-xs text-text-tertiary hover:text-text-primary transition-colors"
+                  >
+                    <Pencil size={12} />
+                    Edit
+                  </button>
+                )}
+              </div>
+              {editingIntro ? (
+                <div className="space-y-3">
+                  <textarea
+                    value={caseStudyIntro}
+                    onChange={(e) => setCaseStudyIntro(e.target.value)}
+                    rows={5}
+                    placeholder="Introduce your project — what problem were you solving, what was your role, and what was the goal?"
+                    className="w-full rounded-lg border border-border bg-surface-2 px-4 py-3 text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setEditingIntro(false);
+                        if (caseStudyPosted) setCaseStudyDirty(true);
+                      }}
+                      className="flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
+                    >
+                      <Check size={14} />
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setEditingIntro(false)}
+                      className="rounded-lg border border-border bg-surface-2 px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-3 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : caseStudyIntro ? (
+                <p className="type-body text-text-secondary whitespace-pre-wrap">
+                  {caseStudyIntro}
+                </p>
+              ) : (
+                <p className="type-body text-text-tertiary italic">
+                  No introduction yet. Click Edit to write one.
+                </p>
+              )}
+            </section>
+
             {/* Case Study Sections */}
-            {caseStudySections.length > 0 ? (
-              <div className="space-y-6">
-                {caseStudySections.map((milestone, i) => {
+            <div className="space-y-6">
+              {allSections.map((unified, i) => {
+                if (unified.kind === "milestone") {
+                  const milestone = unified.milestone;
                   const section = getCaseStudySection(milestone);
                   const isEditing = editingSection === milestone.id;
 
                   return (
                     <section
                       key={milestone.id}
-                      className="rounded-xl border border-border bg-surface-1 p-6"
+                      draggable={!isEditing}
+                      onDragStart={() => handleDragStart(milestone.id)}
+                      onDragOver={(e) => handleDragOver(e, milestone.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={() => handleDrop(milestone.id)}
+                      onDragEnd={handleDragEnd}
+                      className={`rounded-xl border bg-surface-1 p-6 transition-all ${
+                        draggedSection === milestone.id
+                          ? "opacity-50 border-primary"
+                          : dragOverSection === milestone.id
+                            ? "border-accent border-dashed"
+                            : "border-border"
+                      } ${!isEditing ? "cursor-grab active:cursor-grabbing" : ""}`}
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
+                          <GripVertical size={16} className="shrink-0 text-text-disabled mt-0.5" />
                           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
                             {i + 1}
                           </span>
-                          <h3 className="type-subhead text-text-primary">
-                            {milestone.text}
-                          </h3>
+                          <h3 className="type-subhead text-text-primary">{milestone.text}</h3>
                         </div>
                         {!isEditing && (
                           <button
@@ -1130,93 +1491,51 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                       {isEditing ? (
                         <div className="space-y-3">
                           <div>
-                            <label className="type-caption font-medium text-text-secondary">
-                              Summary
-                            </label>
+                            <label className="type-caption font-medium text-text-secondary">Summary</label>
                             <input
                               value={caseStudyEdits[milestone.id]?.summary || ""}
                               onChange={(e) =>
-                                setCaseStudyEdits((prev) => ({
-                                  ...prev,
-                                  [milestone.id]: {
-                                    ...prev[milestone.id],
-                                    summary: e.target.value,
-                                  },
-                                }))
+                                setCaseStudyEdits((prev) => ({ ...prev, [milestone.id]: { ...prev[milestone.id], summary: e.target.value } }))
                               }
-                              className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-4 py-2.5 text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none"
+                              className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-4 py-2.5 text-text-primary focus:border-accent focus:outline-none"
                             />
                           </div>
                           <div>
-                            <label className="type-caption font-medium text-text-secondary">
-                              Details
-                            </label>
+                            <label className="type-caption font-medium text-text-secondary">Details</label>
                             <textarea
                               value={caseStudyEdits[milestone.id]?.details || ""}
                               onChange={(e) =>
-                                setCaseStudyEdits((prev) => ({
-                                  ...prev,
-                                  [milestone.id]: {
-                                    ...prev[milestone.id],
-                                    details: e.target.value,
-                                  },
-                                }))
+                                setCaseStudyEdits((prev) => ({ ...prev, [milestone.id]: { ...prev[milestone.id], details: e.target.value } }))
                               }
                               rows={6}
-                              className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-4 py-2.5 text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none resize-none"
+                              className="mt-1 w-full rounded-lg border border-border bg-surface-2 px-4 py-2.5 text-text-primary focus:border-accent focus:outline-none resize-none"
                             />
                           </div>
                           <div className="flex gap-2">
-                            <button
-                              onClick={() => saveSectionEdit(milestone.id)}
-                              className="flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors"
-                            >
-                              <Check size={14} />
-                              Save
+                            <button onClick={() => saveSectionEdit(milestone.id)} className="flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors">
+                              <Check size={14} /> Save
                             </button>
-                            <button
-                              onClick={() => setEditingSection(null)}
-                              className="rounded-lg border border-border bg-surface-2 px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-3 transition-colors"
-                            >
+                            <button onClick={() => setEditingSection(null)} className="rounded-lg border border-border bg-surface-2 px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-3 transition-colors">
                               Cancel
                             </button>
                           </div>
                         </div>
                       ) : (
                         <div>
-                          <p className="type-body font-medium text-text-primary">
-                            {section.summary}
-                          </p>
+                          <p className="type-body font-medium text-text-primary">{section.summary}</p>
                           {section.details && (
-                            <p className="type-body mt-2 text-text-secondary whitespace-pre-wrap">
-                              {section.details}
-                            </p>
+                            <p className="type-body mt-2 text-text-secondary whitespace-pre-wrap">{section.details}</p>
                           )}
-                          {/* Show attached images */}
                           {milestone.report?.files && milestone.report.files.length > 0 && (
                             <div className="mt-4 grid gap-3 sm:grid-cols-2">
                               {milestone.report.files.map((file, fi) =>
                                 file.type === "image" ? (
-                                  <div
-                                    key={fi}
-                                    className="rounded-lg overflow-hidden border border-border"
-                                  >
-                                    <img
-                                      src={file.url}
-                                      alt={file.name}
-                                      className="w-full object-contain max-h-48"
-                                    />
+                                  <div key={fi} className="rounded-lg overflow-hidden border border-border">
+                                    <img src={file.url} alt={file.name} className="w-full object-contain max-h-48" />
                                   </div>
                                 ) : file.type === "video" ? (
-                                  <div
-                                    key={fi}
-                                    className="rounded-lg overflow-hidden border border-border"
-                                  >
-                                    <video
-                                      src={file.url}
-                                      controls
-                                      className="w-full max-h-48"
-                                    />
+                                  <div key={fi} className="rounded-lg overflow-hidden border border-border">
+                                    <video src={file.url} controls className="w-full max-h-48" />
                                   </div>
                                 ) : null
                               )}
@@ -1226,20 +1545,486 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                       )}
                     </section>
                   );
-                })}
-              </div>
-            ) : (
-              <div className="rounded-xl border border-border bg-surface-1 p-10 text-center">
-                <FileText
-                  size={40}
-                  className="mx-auto text-text-disabled mb-3"
+                }
+
+                // Custom section
+                const cs = unified.section;
+                const isEditingCustomSection = editingCustom === cs.id;
+
+                return (
+                  <section
+                    key={cs.id}
+                    draggable={!isEditingCustomSection}
+                    onDragStart={() => handleDragStart(cs.id)}
+                    onDragOver={(e) => handleDragOver(e, cs.id)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={() => handleDrop(cs.id)}
+                    onDragEnd={handleDragEnd}
+                    className={`rounded-xl border bg-surface-1 p-6 transition-all ${
+                      draggedSection === cs.id
+                        ? "opacity-50 border-primary"
+                        : dragOverSection === cs.id
+                          ? "border-accent border-dashed"
+                          : "border-border"
+                    } ${!isEditingCustomSection ? "cursor-grab active:cursor-grabbing" : ""}`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <GripVertical size={16} className="shrink-0 text-text-disabled mt-0.5" />
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-white">
+                          {i + 1}
+                        </span>
+                        <span className="type-caption text-text-tertiary">Custom Section</span>
+                      </div>
+                      <div className="flex gap-2">
+                        {!isEditingCustomSection && (
+                          <button
+                            onClick={() => setEditingCustom(cs.id)}
+                            className="flex items-center gap-1 text-xs text-text-tertiary hover:text-text-primary transition-colors"
+                          >
+                            <Pencil size={12} /> Edit
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteCustomSection(cs.id)}
+                          className="flex items-center gap-1 text-xs text-text-tertiary hover:text-error transition-colors"
+                        >
+                          <TrashIcon size={12} /> Remove
+                        </button>
+                      </div>
+                    </div>
+
+                    {isEditingCustomSection ? (
+                      <div>
+                        {/* Toolbar */}
+                        <div className="flex items-center gap-1 mb-4 p-1 rounded-lg bg-surface-2 w-fit">
+                          <button
+                            onClick={() => addBlock(cs.id, "title")}
+                            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-3 hover:text-text-primary transition-colors"
+                            title="Add title"
+                          >
+                            <Type size={14} /> Title
+                          </button>
+                          <button
+                            onClick={() => addBlock(cs.id, "text")}
+                            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-3 hover:text-text-primary transition-colors"
+                            title="Add text"
+                          >
+                            <AlignLeft size={14} /> Text
+                          </button>
+                          <label
+                            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-3 hover:text-text-primary transition-colors cursor-pointer ${uploadingBlock ? "opacity-50" : ""}`}
+                            title="Add image"
+                          >
+                            <ImageIcon size={14} /> Image
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              disabled={uploadingBlock}
+                              onChange={(e) => handleBlockImageUpload(cs.id, e)}
+                            />
+                          </label>
+                          <button
+                            onClick={() => setShowReportPicker(showReportPicker === cs.id ? null : cs.id)}
+                            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-3 hover:text-text-primary transition-colors"
+                            title="Insert report"
+                          >
+                            <ListChecks size={14} /> Report
+                          </button>
+                        </div>
+
+                        {/* Report picker dropdown */}
+                        {showReportPicker === cs.id && (
+                          <div className="mb-4 rounded-lg border border-border bg-surface-2 p-3">
+                            <p className="type-caption text-text-tertiary mb-2">Select a report to insert:</p>
+                            <div className="space-y-1">
+                              {completedSections.map((m) => (
+                                <button
+                                  key={m.id}
+                                  onClick={() => {
+                                    addBlock(cs.id, "report", m.report?.summary || "", m.id);
+                                    setShowReportPicker(null);
+                                  }}
+                                  className="w-full text-left rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-3 transition-colors"
+                                >
+                                  {m.text}
+                                </button>
+                              ))}
+                              {completedSections.length === 0 && (
+                                <p className="type-caption text-text-tertiary">No reports available yet.</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Blocks */}
+                        <div className="space-y-3">
+                          {cs.blocks.map((block, bi) => (
+                            <div
+                              key={block.id}
+                              draggable
+                              onDragStart={() => setDraggedBlock({ sectionId: cs.id, blockId: block.id })}
+                              onDragOver={(e) => { e.preventDefault(); setDragOverBlock(block.id); }}
+                              onDragLeave={() => setDragOverBlock(null)}
+                              onDrop={() => handleBlockDrop(cs.id, block.id)}
+                              onDragEnd={() => { setDraggedBlock(null); setDragOverBlock(null); }}
+                              className={`relative group flex gap-2 rounded-lg p-1 transition-all ${
+                                draggedBlock?.blockId === block.id ? "opacity-50" : ""
+                              } ${dragOverBlock === block.id ? "ring-2 ring-accent ring-dashed" : ""}`}
+                            >
+                              {/* Left controls */}
+                              <div className="flex flex-col items-center gap-0.5 pt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <GripVertical size={14} className="text-text-disabled cursor-grab active:cursor-grabbing" />
+                                <button onClick={() => moveBlock(cs.id, block.id, "up")} disabled={bi === 0} className="text-text-disabled hover:text-text-primary disabled:opacity-30 transition-colors">
+                                  <ChevronUp size={14} />
+                                </button>
+                                <button onClick={() => moveBlock(cs.id, block.id, "down")} disabled={bi === cs.blocks.length - 1} className="text-text-disabled hover:text-text-primary disabled:opacity-30 transition-colors">
+                                  <ChevronDown size={14} />
+                                </button>
+                              </div>
+
+                              {/* Block content */}
+                              <div className="flex-1 min-w-0">
+                                <button
+                                  onClick={() => removeBlock(cs.id, block.id)}
+                                  className="absolute right-0 top-0 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-error text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X size={10} />
+                                </button>
+                                {block.type === "title" && (
+                                  <input
+                                    value={block.content}
+                                    onChange={(e) => updateBlock(cs.id, block.id, e.target.value)}
+                                    placeholder="Section title..."
+                                    className="w-full rounded-lg border border-border bg-surface-2 px-4 py-2.5 text-lg font-semibold text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none"
+                                  />
+                                )}
+                                {block.type === "text" && (
+                                  <textarea
+                                    value={block.content}
+                                    onChange={(e) => updateBlock(cs.id, block.id, e.target.value)}
+                                    placeholder="Write your content..."
+                                    rows={4}
+                                    className="w-full rounded-lg border border-border bg-surface-2 px-4 py-2.5 text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none resize-none"
+                                  />
+                                )}
+                                {block.type === "image" && (
+                                  <div className="rounded-lg overflow-hidden border border-border">
+                                    <img src={block.content} alt="Uploaded" className="w-full object-contain max-h-64" />
+                                  </div>
+                                )}
+                                {block.type === "report" && (
+                                  <div className="rounded-lg border border-accent/30 bg-accent/5 px-4 py-3">
+                                    <p className="type-caption font-medium text-accent mb-1">From report:</p>
+                                    <p className="type-body text-text-primary">{block.content}</p>
+                                    {(() => {
+                                      const m = completedSections.find((ms) => ms.id === block.reportId);
+                                      return m?.report?.details ? (
+                                        <p className="type-body mt-1 text-text-secondary">{m.report.details}</p>
+                                      ) : null;
+                                    })()}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {cs.blocks.length === 0 && (
+                            <p className="type-body text-text-tertiary text-center py-6">
+                              Use the toolbar above to add content blocks.
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Save button */}
+                        <div className="flex justify-end mt-4">
+                          <button
+                            onClick={() => saveCustomSection(cs.id)}
+                            disabled={cs.blocks.length === 0}
+                            className="flex items-center gap-1 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-hover transition-colors disabled:opacity-40"
+                          >
+                            <Check size={14} /> Save
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Saved view */
+                      <div className="space-y-3">
+                        {cs.blocks.map((block) => (
+                          <div key={block.id}>
+                            {block.type === "title" && (
+                              <h3 className="type-subhead text-text-primary">{block.content}</h3>
+                            )}
+                            {block.type === "text" && (
+                              <p className="type-body text-text-secondary whitespace-pre-wrap">{block.content}</p>
+                            )}
+                            {block.type === "image" && (
+                              <div className="rounded-lg overflow-hidden border border-border">
+                                <img src={block.content} alt="Section image" className="w-full object-contain max-h-64" />
+                              </div>
+                            )}
+                            {block.type === "report" && (
+                              <div className="rounded-lg border border-accent/30 bg-accent/5 px-4 py-3">
+                                <p className="type-body font-medium text-text-primary">{block.content}</p>
+                                {(() => {
+                                  const m = completedSections.find((ms) => ms.id === block.reportId);
+                                  return m?.report?.details ? (
+                                    <p className="type-body mt-1 text-text-secondary">{m.report.details}</p>
+                                  ) : null;
+                                })()}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                );
+              })}
+
+              {/* Unsaved custom sections being edited */}
+              {customSections
+                .filter((cs) => !cs.saved && editingCustom === cs.id)
+                .map((cs) => (
+                  <section key={cs.id} className="rounded-xl border border-dashed border-accent bg-surface-1 p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="type-caption font-medium text-accent">New Section</span>
+                      <button
+                        onClick={() => deleteCustomSection(cs.id)}
+                        className="flex items-center gap-1 text-xs text-text-tertiary hover:text-error transition-colors"
+                      >
+                        <TrashIcon size={12} /> Discard
+                      </button>
+                    </div>
+
+                    {/* Toolbar */}
+                    <div className="flex items-center gap-1 mb-4 p-1 rounded-lg bg-surface-2 w-fit">
+                      <button onClick={() => addBlock(cs.id, "title")} className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-3 hover:text-text-primary transition-colors">
+                        <Type size={14} /> Title
+                      </button>
+                      <button onClick={() => addBlock(cs.id, "text")} className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-3 hover:text-text-primary transition-colors">
+                        <AlignLeft size={14} /> Text
+                      </button>
+                      <label className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-3 hover:text-text-primary transition-colors cursor-pointer ${uploadingBlock ? "opacity-50" : ""}`}>
+                        <ImageIcon size={14} /> Image
+                        <input type="file" accept="image/*" className="hidden" disabled={uploadingBlock} onChange={(e) => handleBlockImageUpload(cs.id, e)} />
+                      </label>
+                      <button
+                        onClick={() => setShowReportPicker(showReportPicker === cs.id ? null : cs.id)}
+                        className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-3 hover:text-text-primary transition-colors"
+                      >
+                        <ListChecks size={14} /> Report
+                      </button>
+                    </div>
+
+                    {showReportPicker === cs.id && (
+                      <div className="mb-4 rounded-lg border border-border bg-surface-2 p-3">
+                        <p className="type-caption text-text-tertiary mb-2">Select a report to insert:</p>
+                        <div className="space-y-1">
+                          {completedSections.map((m) => (
+                            <button
+                              key={m.id}
+                              onClick={() => {
+                                addBlock(cs.id, "report", m.report?.summary || "", m.id);
+                                setShowReportPicker(null);
+                              }}
+                              className="w-full text-left rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-3 transition-colors"
+                            >
+                              {m.text}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      {cs.blocks.map((block) => (
+                        <div key={block.id} className="relative group">
+                          <button
+                            onClick={() => removeBlock(cs.id, block.id)}
+                            className="absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-error text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X size={10} />
+                          </button>
+                          {block.type === "title" && (
+                            <input
+                              value={block.content}
+                              onChange={(e) => updateBlock(cs.id, block.id, e.target.value)}
+                              placeholder="Section title..."
+                              className="w-full rounded-lg border border-border bg-surface-2 px-4 py-2.5 text-lg font-semibold text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none"
+                            />
+                          )}
+                          {block.type === "text" && (
+                            <textarea
+                              value={block.content}
+                              onChange={(e) => updateBlock(cs.id, block.id, e.target.value)}
+                              placeholder="Write your content..."
+                              rows={4}
+                              className="w-full rounded-lg border border-border bg-surface-2 px-4 py-2.5 text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none resize-none"
+                            />
+                          )}
+                          {block.type === "image" && (
+                            <div className="rounded-lg overflow-hidden border border-border">
+                              <img src={block.content} alt="Uploaded" className="w-full object-contain max-h-64" />
+                            </div>
+                          )}
+                          {block.type === "report" && (
+                            <div className="rounded-lg border border-accent/30 bg-accent/5 px-4 py-3">
+                              <p className="type-caption font-medium text-accent mb-1">From report:</p>
+                              <p className="type-body text-text-primary">{block.content}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {cs.blocks.length === 0 && (
+                        <p className="type-body text-text-tertiary text-center py-6">
+                          Use the toolbar above to add content blocks.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end mt-4">
+                      <button
+                        onClick={() => saveCustomSection(cs.id)}
+                        disabled={cs.blocks.length === 0}
+                        className="flex items-center gap-1 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-hover transition-colors disabled:opacity-40"
+                      >
+                        <Check size={14} /> Save
+                      </button>
+                    </div>
+                  </section>
+                ))}
+
+              {/* Add Section Button */}
+              <button
+                onClick={addCustomSection}
+                className="w-full rounded-xl border-2 border-dashed border-border bg-transparent py-4 text-sm font-medium text-text-tertiary hover:border-accent hover:text-text-primary transition-colors"
+              >
+                <Plus size={16} className="inline mr-1 -mt-0.5" />
+                Add Section
+              </button>
+            </div>
+
+            {/* Links */}
+            <section className="rounded-xl border border-border bg-surface-1 p-6 mt-6">
+              <h3 className="type-subhead text-text-primary mb-3">
+                Project Links
+              </h3>
+              <p className="type-caption text-text-tertiary mb-4">
+                Add relevant links — live demo, repository, design files, documentation, etc.
+              </p>
+
+              {caseStudyLinks.length > 0 && (
+                <ul className="space-y-2 mb-4">
+                  {caseStudyLinks.map((link, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-3 rounded-lg border border-border bg-surface-2 px-4 py-3"
+                    >
+                      <LinkIcon size={16} className="shrink-0 text-accent" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-text-primary truncate">
+                          {link.title}
+                        </p>
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-accent hover:underline truncate block"
+                        >
+                          {link.url}
+                        </a>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setCaseStudyLinks((prev) => prev.filter((_, idx) => idx !== i));
+                          if (caseStudyPosted) setCaseStudyDirty(true);
+                        }}
+                        className="shrink-0 text-text-disabled hover:text-error transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  value={newLinkTitle}
+                  onChange={(e) => setNewLinkTitle(e.target.value)}
+                  placeholder="Title (e.g. Live Demo)"
+                  className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none"
                 />
-                <p className="type-body text-text-tertiary">
-                  No sections yet. Submit milestone reports to build your case
-                  study.
-                </p>
+                <input
+                  value={newLinkUrl}
+                  onChange={(e) => setNewLinkUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newLinkTitle.trim() && newLinkUrl.trim()) {
+                      setCaseStudyLinks((prev) => [...prev, { title: newLinkTitle.trim(), url: newLinkUrl.trim() }]);
+                      setNewLinkTitle("");
+                      setNewLinkUrl("");
+                      if (caseStudyPosted) setCaseStudyDirty(true);
+                    }
+                  }}
+                  placeholder="URL"
+                  className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none"
+                />
+                <button
+                  onClick={() => {
+                    if (!newLinkTitle.trim() || !newLinkUrl.trim()) return;
+                    setCaseStudyLinks((prev) => [...prev, { title: newLinkTitle.trim(), url: newLinkUrl.trim() }]);
+                    setNewLinkTitle("");
+                    setNewLinkUrl("");
+                    if (caseStudyPosted) setCaseStudyDirty(true);
+                  }}
+                  disabled={!newLinkTitle.trim() || !newLinkUrl.trim()}
+                  className="flex items-center justify-center gap-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover transition-colors disabled:opacity-40"
+                >
+                  <Plus size={14} />
+                  Add
+                </button>
               </div>
-            )}
+            </section>
+
+            {/* Team Roles */}
+            <section className="rounded-xl border border-border bg-surface-1 p-6 mt-6">
+              <h3 className="type-subhead text-text-primary mb-2">
+                Team Members
+              </h3>
+              <p className="type-caption text-text-tertiary mb-4">
+                Set each member&apos;s title as it should appear in the case study.
+              </p>
+
+              <ul className="space-y-3">
+                {teamMembers.map((member) => (
+                  <li key={member.id} className="flex items-center gap-3">
+                    <div className="h-9 w-9 shrink-0 rounded-full overflow-hidden bg-surface-2">
+                      <img
+                        src={`https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(member.avatarSeed)}&backgroundColor=e8432a`}
+                        alt={member.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-text-primary w-32 shrink-0 truncate">
+                      {member.name}
+                    </span>
+                    <input
+                      value={caseStudyTeamRoles[member.id] || ""}
+                      onChange={(e) => {
+                        setCaseStudyTeamRoles((prev) => ({
+                          ...prev,
+                          [member.id]: e.target.value,
+                        }));
+                        if (caseStudyPosted) setCaseStudyDirty(true);
+                      }}
+                      placeholder="e.g. Frontend Developer"
+                      className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
           </div>
         )}
 
