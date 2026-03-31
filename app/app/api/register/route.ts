@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { db } from "@/app/lib/db";
+import { supabase } from "@/app/lib/db";
 import crypto from "crypto";
 
 export async function POST(request: Request) {
@@ -20,9 +20,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const existing = db
-    .prepare("SELECT id FROM users WHERE email = ?")
-    .get(email);
+  const { data: existing } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", email)
+    .single();
 
   if (existing) {
     return NextResponse.json(
@@ -34,9 +36,13 @@ export async function POST(request: Request) {
   const hashedPassword = await bcrypt.hash(password, 10);
   const id = crypto.randomUUID();
 
-  db.prepare(
-    "INSERT INTO users (id, name, email, password) VALUES (?, ?, ?, ?)"
-  ).run(id, name, email, hashedPassword);
+  const { error } = await supabase
+    .from("users")
+    .insert({ id, name, email, password: hashedPassword });
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to create account" }, { status: 500 });
+  }
 
   return NextResponse.json({ message: "Account created" }, { status: 201 });
 }

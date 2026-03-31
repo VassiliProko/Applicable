@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
-import { db } from "@/app/lib/db";
-
-interface CountRow {
-  project_id: string;
-  completed: number;
-}
+import { supabase } from "@/app/lib/db";
 
 export async function GET() {
   const session = await auth();
@@ -13,15 +8,18 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const rows = db
-    .prepare(
-      "SELECT project_id, COUNT(*) as completed FROM milestone_reports WHERE user_id = ? GROUP BY project_id"
-    )
-    .all(session.user.id) as CountRow[];
+  const { data: reports, error } = await supabase
+    .from("milestone_reports")
+    .select("project_id")
+    .eq("user_id", session.user.id);
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to load progress" }, { status: 500 });
+  }
 
   const progress: Record<string, number> = {};
-  for (const row of rows) {
-    progress[row.project_id] = row.completed;
+  for (const row of reports || []) {
+    progress[row.project_id] = (progress[row.project_id] || 0) + 1;
   }
 
   return NextResponse.json(progress);

@@ -1,17 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
-import { db } from "@/app/lib/db";
+import { supabase } from "@/app/lib/db";
 import crypto from "crypto";
-
-interface ReportRow {
-  id: string;
-  milestone_id: string;
-  summary: string;
-  details: string | null;
-  files: string;
-  link: string | null;
-  created_at: string;
-}
 
 // GET: load all reports for a project
 export async function GET(request: Request) {
@@ -30,18 +20,17 @@ export async function GET(request: Request) {
     );
   }
 
-  const reports = db
-    .prepare(
-      "SELECT id, milestone_id, summary, details, files, link, created_at FROM milestone_reports WHERE user_id = ? AND project_id = ?"
-    )
-    .all(session.user.id, projectId) as ReportRow[];
+  const { data: reports, error } = await supabase
+    .from("milestone_reports")
+    .select("id, milestone_id, summary, details, files, link, created_at")
+    .eq("user_id", session.user.id)
+    .eq("project_id", projectId);
 
-  const parsed = reports.map((r) => ({
-    ...r,
-    files: JSON.parse(r.files),
-  }));
+  if (error) {
+    return NextResponse.json({ error: "Failed to load reports" }, { status: 500 });
+  }
 
-  return NextResponse.json(parsed);
+  return NextResponse.json(reports || []);
 }
 
 // POST: save a milestone report
@@ -63,21 +52,23 @@ export async function POST(request: Request) {
 
   const id = crypto.randomUUID();
 
-  db.prepare(
-    `INSERT INTO milestone_reports (id, user_id, project_id, milestone_id, summary, details, files, link)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(user_id, project_id, milestone_id)
-     DO UPDATE SET summary = excluded.summary, details = excluded.details, files = excluded.files, link = excluded.link`
-  ).run(
-    id,
-    session.user.id,
-    projectId,
-    milestoneId,
-    summary,
-    details || "",
-    JSON.stringify(files || []),
-    link || null
+  const { error } = await supabase.from("milestone_reports").upsert(
+    {
+      id,
+      user_id: session.user.id,
+      project_id: projectId,
+      milestone_id: milestoneId,
+      summary,
+      details: details || "",
+      files: files || [],
+      link: link || null,
+    },
+    { onConflict: "user_id,project_id,milestone_id" }
   );
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to save report" }, { status: 500 });
+  }
 
   return NextResponse.json({ message: "Report saved" }, { status: 201 });
 }

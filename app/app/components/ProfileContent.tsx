@@ -41,17 +41,20 @@ export default function ProfileContent() {
     fetch("/api/profile")
       .then((res) => res.json())
       .then((data) => {
-        setUser(data);
-        setForm({
-          name: data.name || "",
-          title: data.title || "",
-          bio: data.bio || "",
-          location: data.location || "",
-          website: data.website || "",
-          skills: data.skills || "",
-        });
+        if (data && data.name) {
+          setUser(data);
+          setForm({
+            name: data.name || "",
+            title: data.title || "",
+            bio: data.bio || "",
+            location: data.location || "",
+            website: data.website || "",
+            skills: data.skills || "",
+          });
+        }
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   async function handleSave() {
@@ -87,7 +90,20 @@ export default function ProfileContent() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 gap-4">
+        <p className="type-body text-text-tertiary">Could not load profile.</p>
+        <button
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-3"
+        >
+          <LogOut size={16} />
+          Sign Out & Log In Again
+        </button>
+      </div>
+    );
+  }
 
   const initials = user.name
     .split(" ")

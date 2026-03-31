@@ -1,18 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
-import { db } from "@/app/lib/db";
+import { supabase } from "@/app/lib/db";
 import crypto from "crypto";
 
-interface CaseStudyRow {
-  id: string;
-  project_id: string;
-  project_title: string;
-  company_name: string;
-  sections: string;
-  created_at: string;
-}
-
-// GET: list all case studies for the logged-in user
+// GET: list all case studies or get a single one
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -23,33 +14,31 @@ export async function GET(request: Request) {
   const caseStudyId = searchParams.get("id");
 
   if (caseStudyId) {
-    // Get a single case study
-    const row = db
-      .prepare(
-        "SELECT id, project_id, project_title, company_name, sections, created_at FROM case_studies WHERE id = ? AND user_id = ?"
-      )
-      .get(caseStudyId, session.user.id) as CaseStudyRow | undefined;
+    const { data, error } = await supabase
+      .from("case_studies")
+      .select("id, project_id, project_title, company_name, sections, created_at")
+      .eq("id", caseStudyId)
+      .eq("user_id", session.user.id)
+      .single();
 
-    if (!row) {
+    if (error || !data) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ ...row, sections: JSON.parse(row.sections) });
+    return NextResponse.json(data);
   }
 
-  // List all
-  const rows = db
-    .prepare(
-      "SELECT id, project_id, project_title, company_name, sections, created_at FROM case_studies WHERE user_id = ? ORDER BY created_at DESC"
-    )
-    .all(session.user.id) as CaseStudyRow[];
+  const { data, error } = await supabase
+    .from("case_studies")
+    .select("id, project_id, project_title, company_name, sections, created_at")
+    .eq("user_id", session.user.id)
+    .order("created_at", { ascending: false });
 
-  const parsed = rows.map((r) => ({
-    ...r,
-    sections: JSON.parse(r.sections),
-  }));
+  if (error) {
+    return NextResponse.json({ error: "Failed to load" }, { status: 500 });
+  }
 
-  return NextResponse.json(parsed);
+  return NextResponse.json(data || []);
 }
 
 // POST: publish a case study
@@ -71,17 +60,32 @@ export async function POST(request: Request) {
 
   const id = crypto.randomUUID();
 
-  db.prepare(
-    `INSERT INTO case_studies (id, user_id, project_id, project_title, company_name, sections)
-     VALUES (?, ?, ?, ?, ?, ?)
-     ON CONFLICT(project_id)
-     DO UPDATE SET sections = excluded.sections, project_title = excluded.project_title, company_name = excluded.company_name`
-  ).run(id, session.user.id, projectId, projectTitle, companyName || "", JSON.stringify(sections));
+  const { error } = await supabase.from("case_studies").upsert(
+    {
+      id,
+      user_id: session.user.id,
+      project_id: projectId,
+      project_title: projectTitle,
+      company_name: companyName || "",
+      sections,
+    },
+    { onConflict: "project_id" }
+  );
 
-  // Get the actual ID (might be existing row on conflict)
-  const row = db
-    .prepare("SELECT id FROM case_studies WHERE user_id = ? AND project_id = ?")
-    .get(session.user.id, projectId) as { id: string };
+  if (error) {
+    return NextResponse.json({ error: "Failed to publish" }, { status: 500 });
+  }
 
-  return NextResponse.json({ id: row.id, message: "Case study published" }, { status: 201 });
+  // Get the actual ID
+  const { data: row } = await supabase
+    .from("case_studies")
+    .select("id")
+    .eq("user_id", session.user.id)
+    .eq("project_id", projectId)
+    .single();
+
+  return NextResponse.json(
+    { id: row?.id || id, message: "Case study published" },
+    { status: 201 }
+  );
 }
