@@ -1,10 +1,15 @@
 import { Project } from "./types";
 
+function logo(domain: string) {
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+}
+
 export const projects: Project[] = [
   {
     id: "accessible-component-lib",
     title: "Accessible Component Library",
     companyName: "Stripe",
+    logoUrl: logo("stripe.com"),
     tagline: "Build reusable UI components that work for everyone.",
     description:
       "Design and develop a small library of accessible React components following WAI-ARIA guidelines.",
@@ -56,6 +61,7 @@ export const projects: Project[] = [
     id: "public-data-insights",
     title: "Public Data Insights Dashboard",
     companyName: "Datadog",
+    logoUrl: logo("datadoghq.com"),
     tagline: "Turn raw open data into actionable visual stories.",
     description:
       "Analyse a public dataset and produce an interactive dashboard that surfaces meaningful insights.",
@@ -99,6 +105,7 @@ export const projects: Project[] = [
     id: "onboarding-redesign",
     title: "Product Onboarding Redesign",
     companyName: "Figma",
+    logoUrl: logo("figma.com"),
     tagline: "Reimagine how new users experience a product.",
     description:
       "Research, prototype, and test a redesigned onboarding flow for an existing product.",
@@ -148,6 +155,7 @@ export const projects: Project[] = [
     id: "rest-api-bookstore",
     title: "Bookstore REST API",
     companyName: "Shopify",
+    logoUrl: logo("shopify.com"),
     tagline: "Design a clean API that powers a digital bookshop.",
     description:
       "Build a fully documented RESTful API for a bookstore with auth, CRUD, and search.",
@@ -191,6 +199,7 @@ export const projects: Project[] = [
     id: "habit-tracker-mobile",
     title: "Habit Tracker Mobile App",
     companyName: "Headspace",
+    logoUrl: logo("headspace.com"),
     tagline: "Help people build better habits, one day at a time.",
     description:
       "Design and build a cross-platform mobile app for tracking daily habits with streaks and reminders.",
@@ -243,6 +252,7 @@ export const projects: Project[] = [
     id: "containerize-deploy",
     title: "Containerize & Deploy a Web App",
     companyName: "Vercel",
+    logoUrl: logo("vercel.com"),
     tagline: "Take an app from localhost to the cloud.",
     description:
       "Dockerize an existing web application and set up a CI/CD pipeline for automated deployment.",
@@ -287,6 +297,7 @@ export const projects: Project[] = [
     id: "recommendation-engine",
     title: "Movie Recommendation Engine",
     companyName: "Netflix",
+    logoUrl: logo("netflix.com"),
     tagline: "Build an ML system that predicts what people love.",
     description:
       "Develop a collaborative-filtering recommendation engine using real movie rating data.",
@@ -332,6 +343,7 @@ export const projects: Project[] = [
     id: "technical-blog-series",
     title: "Technical Blog Series",
     companyName: "Medium",
+    logoUrl: logo("medium.com"),
     tagline: "Explain complex topics so anyone can understand.",
     description:
       "Write a 3-part technical blog series that teaches a complex topic through clear, engaging prose.",
@@ -381,6 +393,7 @@ export const projects: Project[] = [
     id: "prd-feature",
     title: "Write a Product Requirements Doc",
     companyName: "Notion",
+    logoUrl: logo("notion.so"),
     tagline: "Define what to build and why before anyone writes code.",
     description:
       "Research a product opportunity and deliver a professional PRD with user stories, acceptance criteria, and success metrics.",
