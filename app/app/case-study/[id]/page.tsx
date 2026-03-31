@@ -220,7 +220,7 @@ export default function CaseStudyPage() {
                     )}
                   </div>
                 )}
-                  </>
+                </>
                 )}
 
                 {/* Divider */}

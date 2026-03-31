@@ -516,6 +516,7 @@ export default function ProjectDashboard({ project }: { project: Project }) {
   const [showReportPicker, setShowReportPicker] = useState<string | null>(null);
   const [draggedBlock, setDraggedBlock] = useState<{ sectionId: string; blockId: string } | null>(null);
   const [dragOverBlock, setDragOverBlock] = useState<string | null>(null);
+  const [showAddPicker, setShowAddPicker] = useState(false);
 
   // Unified section list: milestone sections + custom sections, ordered
   type UnifiedSection =
@@ -562,6 +563,38 @@ export default function ProjectDashboard({ project }: { project: Project }) {
       { id, blocks: [], saved: false },
     ]);
     setEditingCustom(id);
+    setShowAddPicker(false);
+  }
+
+  function addReportAsSection(milestone: Milestone) {
+    const id = `custom-${Date.now()}`;
+    const blocks: CaseStudyBlock[] = [];
+    blocks.push({ id: newBlockId(), type: "title", content: milestone.text });
+    if (milestone.report?.summary) {
+      blocks.push({ id: newBlockId(), type: "text", content: milestone.report.summary });
+    }
+    if (milestone.report?.details) {
+      blocks.push({ id: newBlockId(), type: "text", content: milestone.report.details });
+    }
+    if (milestone.report?.files) {
+      milestone.report.files.forEach((f) => {
+        if (f.type === "image") {
+          blocks.push({ id: newBlockId(), type: "image", content: f.url });
+        }
+      });
+    }
+    setCustomSections((prev) => [
+      ...prev,
+      { id, blocks, saved: true },
+    ]);
+    setShowAddPicker(false);
+    if (caseStudyPosted) setCaseStudyDirty(true);
+  }
+
+  let blockCounter = 0;
+  function newBlockId() {
+    blockCounter++;
+    return `block-${Date.now()}-${blockCounter}-${Math.random().toString(36).slice(2, 6)}`;
   }
 
   function addBlock(sectionId: string, type: CaseStudyBlock["type"], content = "", reportId?: string) {
@@ -572,7 +605,23 @@ export default function ProjectDashboard({ project }: { project: Project }) {
               ...s,
               blocks: [
                 ...s.blocks,
-                { id: `block-${Date.now()}`, type, content, reportId },
+                { id: newBlockId(), type, content, reportId },
+              ],
+            }
+          : s
+      )
+    );
+  }
+
+  function addBlocks(sectionId: string, blocks: Omit<CaseStudyBlock, "id">[]) {
+    setCustomSections((prev) =>
+      prev.map((s) =>
+        s.id === sectionId
+          ? {
+              ...s,
+              blocks: [
+                ...s.blocks,
+                ...blocks.map((b) => ({ ...b, id: newBlockId() })),
               ],
             }
           : s
@@ -1625,57 +1674,31 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                               onChange={(e) => handleBlockImageUpload(cs.id, e)}
                             />
                           </label>
-                          <button
-                            onClick={() => setShowReportPicker(showReportPicker === cs.id ? null : cs.id)}
-                            className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-3 hover:text-text-primary transition-colors"
-                            title="Insert report"
-                          >
-                            <ListChecks size={14} /> Report
-                          </button>
                         </div>
 
-                        {/* Report picker dropdown */}
-                        {showReportPicker === cs.id && (
-                          <div className="mb-4 rounded-lg border border-border bg-surface-2 p-3">
-                            <p className="type-caption text-text-tertiary mb-2">Select a report to insert:</p>
-                            <div className="space-y-1">
-                              {completedSections.map((m) => (
-                                <button
-                                  key={m.id}
-                                  onClick={() => {
-                                    addBlock(cs.id, "report", m.report?.summary || "", m.id);
-                                    setShowReportPicker(null);
-                                  }}
-                                  className="w-full text-left rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-3 transition-colors"
-                                >
-                                  {m.text}
-                                </button>
-                              ))}
-                              {completedSections.length === 0 && (
-                                <p className="type-caption text-text-tertiary">No reports available yet.</p>
-                              )}
-                            </div>
-                          </div>
-                        )}
 
                         {/* Blocks */}
                         <div className="space-y-3">
                           {cs.blocks.map((block, bi) => (
                             <div
                               key={block.id}
-                              draggable
-                              onDragStart={() => setDraggedBlock({ sectionId: cs.id, blockId: block.id })}
                               onDragOver={(e) => { e.preventDefault(); setDragOverBlock(block.id); }}
                               onDragLeave={() => setDragOverBlock(null)}
                               onDrop={() => handleBlockDrop(cs.id, block.id)}
-                              onDragEnd={() => { setDraggedBlock(null); setDragOverBlock(null); }}
                               className={`relative group flex gap-2 rounded-lg p-1 transition-all ${
                                 draggedBlock?.blockId === block.id ? "opacity-50" : ""
                               } ${dragOverBlock === block.id ? "ring-2 ring-accent ring-dashed" : ""}`}
                             >
                               {/* Left controls */}
                               <div className="flex flex-col items-center gap-0.5 pt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <GripVertical size={14} className="text-text-disabled cursor-grab active:cursor-grabbing" />
+                                <div
+                                  draggable
+                                  onDragStart={() => setDraggedBlock({ sectionId: cs.id, blockId: block.id })}
+                                  onDragEnd={() => { setDraggedBlock(null); setDragOverBlock(null); }}
+                                  className="cursor-grab active:cursor-grabbing p-0.5"
+                                >
+                                  <GripVertical size={14} className="text-text-disabled" />
+                                </div>
                                 <button onClick={() => moveBlock(cs.id, block.id, "up")} disabled={bi === 0} className="text-text-disabled hover:text-text-primary disabled:opacity-30 transition-colors">
                                   <ChevronUp size={14} />
                                 </button>
@@ -1896,13 +1919,62 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                 ))}
 
               {/* Add Section Button */}
-              <button
-                onClick={addCustomSection}
-                className="w-full rounded-xl border-2 border-dashed border-border bg-transparent py-4 text-sm font-medium text-text-tertiary hover:border-accent hover:text-text-primary transition-colors"
-              >
-                <Plus size={16} className="inline mr-1 -mt-0.5" />
-                Add Section
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowAddPicker(!showAddPicker)}
+                  className="w-full rounded-xl border-2 border-dashed border-border bg-transparent py-4 text-sm font-medium text-text-tertiary hover:border-accent hover:text-text-primary transition-colors"
+                >
+                  <Plus size={16} className="inline mr-1 -mt-0.5" />
+                  Add Section
+                </button>
+
+                {showAddPicker && (
+                  <div className="mt-2 rounded-xl border border-border bg-surface-1 p-4 shadow-lg">
+                    <p className="type-caption font-medium text-text-tertiary mb-3">
+                      Choose section type:
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {/* Custom section */}
+                      <button
+                        onClick={addCustomSection}
+                        className="flex items-center gap-3 rounded-lg border border-border bg-surface-2 p-4 text-left hover:bg-surface-3 transition-colors"
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10">
+                          <AlignLeft size={20} className="text-accent" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-text-primary">Custom Section</p>
+                          <p className="type-caption text-text-tertiary">Build from scratch with titles, text, and images</p>
+                        </div>
+                      </button>
+
+                      {/* From report */}
+                      {completedSections.map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => addReportAsSection(m)}
+                          className="flex items-center gap-3 rounded-lg border border-border bg-surface-2 p-4 text-left hover:bg-surface-3 transition-colors"
+                        >
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                            <FileText size={20} className="text-primary" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-text-primary truncate">{m.text}</p>
+                            <p className="type-caption text-text-tertiary">Import from report</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => setShowAddPicker(false)}
+                      className="mt-3 w-full text-center type-caption text-text-tertiary hover:text-text-primary transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Links */}
