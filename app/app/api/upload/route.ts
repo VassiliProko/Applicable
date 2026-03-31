@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { supabase } from "@/app/lib/db";
 import crypto from "crypto";
 
 export async function POST(request: Request) {
@@ -21,14 +20,23 @@ export async function POST(request: Request) {
   const buffer = Buffer.from(bytes);
 
   // Generate unique filename
-  const ext = path.extname(file.name);
+  const ext = file.name.includes(".") ? file.name.substring(file.name.lastIndexOf(".")) : "";
   const uniqueName = `${crypto.randomUUID()}${ext}`;
 
-  const uploadDir = path.join(process.cwd(), "public", "uploads");
-  await mkdir(uploadDir, { recursive: true });
+  const { error } = await supabase.storage
+    .from("uploads")
+    .upload(uniqueName, buffer, {
+      contentType: file.type,
+      upsert: false,
+    });
 
-  const filePath = path.join(uploadDir, uniqueName);
-  await writeFile(filePath, buffer);
+  if (error) {
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+  }
+
+  const { data: urlData } = supabase.storage
+    .from("uploads")
+    .getPublicUrl(uniqueName);
 
   const fileType = file.type.startsWith("video/")
     ? "video"
@@ -39,6 +47,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     name: file.name,
     type: fileType,
-    url: `/uploads/${uniqueName}`,
+    url: urlData.publicUrl,
   });
 }
