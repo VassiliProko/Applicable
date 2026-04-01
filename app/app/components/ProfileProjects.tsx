@@ -4,6 +4,20 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Project } from "@/app/lib/types";
 import { Clock, FileText, ArrowUpDown, Settings } from "lucide-react";
+
+const categoryThumbnails: Record<string, string> = {
+  "Design": "/thumbnails/Thumbnail -  Design.png",
+  "Mobile": "/thumbnails/Thumbnail -  Mobile.png",
+  "Marketing": "/thumbnails/Thumbnail - Marketing.png",
+  "Engineering": "/thumbnails/Thumbnail -  Dev.png",
+  "DevOps": "/thumbnails/Thumbnail -  Dev.png",
+  "Data & Analytics": "/thumbnails/Thumbnail -  Dev.png",
+};
+
+function getThumbnail(project: Project): string {
+  if (project.imageUrl) return project.imageUrl;
+  return categoryThumbnails[project.category] || "/thumbnails/Thumbnail -  Dev.png";
+}
 import FitTitle from "./FitTitle";
 import ProgressGrid from "./ProgressGrid";
 import ProjectModal from "./ProjectModal";
@@ -300,9 +314,7 @@ export default function ProfileProjects() {
                   </span>
                   <FitTitle className="type-title pr-20">{project.title}</FitTitle>
                   <div className="mt-3 aspect-4/3 w-full overflow-hidden rounded-lg bg-black">
-                    {project.imageUrl && (
-                      <img src={project.imageUrl} alt={project.title} className="h-full w-full object-cover" />
-                    )}
+                    <img src={getThumbnail(project)} alt={project.title} className="h-full w-full object-cover" />
                   </div>
                   <p className="type-body mt-3 line-clamp-2 text-text-secondary">{project.tagline}</p>
                   <div className="mt-auto flex items-center justify-between pt-4">

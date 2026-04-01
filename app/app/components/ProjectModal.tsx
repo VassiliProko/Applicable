@@ -4,6 +4,20 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { Project } from "@/app/lib/types";
 import { X, Clock, Signal, Check, CheckCircle } from "lucide-react";
 
+const categoryThumbnails: Record<string, string> = {
+  "Design": "/thumbnails/Thumbnail -  Design.png",
+  "Mobile": "/thumbnails/Thumbnail -  Mobile.png",
+  "Marketing": "/thumbnails/Thumbnail - Marketing.png",
+  "Engineering": "/thumbnails/Thumbnail -  Dev.png",
+  "DevOps": "/thumbnails/Thumbnail -  Dev.png",
+  "Data & Analytics": "/thumbnails/Thumbnail -  Dev.png",
+};
+
+function getThumbnail(project: Project): string {
+  if (project.imageUrl) return project.imageUrl;
+  return categoryThumbnails[project.category] || "/thumbnails/Thumbnail -  Dev.png";
+}
+
 export default function ProjectModal({
   project,
   onClose,
@@ -123,13 +137,11 @@ export default function ProjectModal({
             </h2>
 
             <div className="mt-4 aspect-video max-w-md overflow-hidden rounded-[10px] bg-black">
-              {project.imageUrl && (
-                <img
-                  src={project.imageUrl}
-                  alt={project.title}
-                  className="h-full w-full object-cover"
-                />
-              )}
+              <img
+                src={getThumbnail(project)}
+                alt={project.title}
+                className="h-full w-full object-cover"
+              />
             </div>
 
             <p className="type-body mt-4 text-text-secondary">

@@ -4,6 +4,20 @@ import { Project } from "@/app/lib/types";
 import { Clock } from "lucide-react";
 import FitTitle from "./FitTitle";
 
+const categoryThumbnails: Record<string, string> = {
+  "Design": "/thumbnails/Thumbnail -  Design.png",
+  "Mobile": "/thumbnails/Thumbnail -  Mobile.png",
+  "Marketing": "/thumbnails/Thumbnail - Marketing.png",
+  "Engineering": "/thumbnails/Thumbnail -  Dev.png",
+  "DevOps": "/thumbnails/Thumbnail -  Dev.png",
+  "Data & Analytics": "/thumbnails/Thumbnail -  Dev.png",
+};
+
+function getThumbnail(project: Project): string {
+  if (project.imageUrl) return project.imageUrl;
+  return categoryThumbnails[project.category] || "/thumbnails/Thumbnail -  Dev.png";
+}
+
 export default function ProjectCard({
   project,
   onClick,
@@ -27,13 +41,11 @@ export default function ProjectCard({
       <FitTitle className="type-title">{project.title}</FitTitle>
 
       <div className="mt-3 aspect-[4/3] w-full overflow-hidden rounded-[8px] bg-black">
-        {project.imageUrl && (
-          <img
-            src={project.imageUrl}
-            alt={project.title}
-            className="h-full w-full object-cover"
-          />
-        )}
+        <img
+          src={getThumbnail(project)}
+          alt={project.title}
+          className="h-full w-full object-cover"
+        />
       </div>
 
       <p className="type-body mt-3 line-clamp-2 text-text-secondary">{project.tagline}</p>
