@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { supabase } from "@/app/lib/db";
+import { sendNotification } from "@/app/lib/notify";
 import crypto from "crypto";
 
 // GET: get submissions
@@ -114,6 +115,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to submit" }, { status: 500 });
   }
 
+  // Notify project creator
+  const { data: proj } = await supabase
+    .from("projects")
+    .select("creator_id, title")
+    .eq("id", projectId)
+    .single();
+
+  if (proj && proj.creator_id !== session.user.id) {
+    const { data: submitter } = await supabase
+      .from("users")
+      .select("name")
+      .eq("id", session.user.id)
+      .single();
+
+    await sendNotification({
+      userId: proj.creator_id,
+      type: "new_submission",
+      title: "New Final Submission",
+      message: `${submitter?.name || "Someone"} submitted their final work for "${proj.title}"`,
+      link: `/manage-project/${projectId}`,
+    });
+  }
+
   return NextResponse.json({ message: "Submitted" }, { status: 201 });
 }
 
@@ -159,6 +183,31 @@ export async function PUT(request: Request) {
 
   if (error) {
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+  }
+
+  // Notify the submitter
+  const { data: subFull } = await supabase
+    .from("project_submissions")
+    .select("user_id")
+    .eq("id", submissionId)
+    .single();
+
+  if (subFull) {
+    const { data: proj } = await supabase
+      .from("projects")
+      .select("title")
+      .eq("id", submission.project_id)
+      .single();
+
+    await sendNotification({
+      userId: subFull.user_id,
+      type: status === "approved" ? "submission_approved" : "submission_rejected",
+      title: status === "approved" ? "Project Approved!" : "Submission Needs Changes",
+      message: status === "approved"
+        ? `Your final submission for "${proj?.title || "a project"}" has been approved! Congratulations!`
+        : `Your final submission for "${proj?.title || "a project"}" needs changes.${feedback ? " Check the feedback." : ""}`,
+      link: `/project/${submission.project_id}`,
+    });
   }
 
   return NextResponse.json({ message: "Review saved" });

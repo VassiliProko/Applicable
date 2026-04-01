@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { User } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
 
 export default function Navbar() {
   return (
@@ -18,6 +19,7 @@ export default function Navbar() {
       </Link>
       <div className="flex items-center gap-2">
         <ThemeToggle />
+        <NotificationBell />
         <Link
           href="/profile"
           aria-label="Account"

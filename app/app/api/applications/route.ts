@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { supabase } from "@/app/lib/db";
+import { sendNotification } from "@/app/lib/notify";
 import crypto from "crypto";
 
 // GET: get applications (for applicant or project creator)
@@ -112,6 +113,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to submit" }, { status: 500 });
   }
 
+  // Notify project creator
+  const { data: proj } = await supabase
+    .from("projects")
+    .select("creator_id, title")
+    .eq("id", projectId)
+    .single();
+
+  if (proj) {
+    const { data: applicant } = await supabase
+      .from("users")
+      .select("name")
+      .eq("id", session.user.id)
+      .single();
+
+    await sendNotification({
+      userId: proj.creator_id,
+      type: "new_application",
+      title: "New Application",
+      message: `${applicant?.name || "Someone"} applied to "${proj.title}"`,
+      link: `/manage-project/${projectId}`,
+    });
+  }
+
   return NextResponse.json({ id, message: "Application submitted" }, { status: 201 });
 }
 
@@ -149,6 +173,13 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Get the applicant's user_id before updating
+  const { data: appFull } = await supabase
+    .from("applications")
+    .select("user_id")
+    .eq("id", applicationId)
+    .single();
+
   const { error } = await supabase
     .from("applications")
     .update({ status, updated_at: new Date().toISOString() })
@@ -156,6 +187,25 @@ export async function PUT(request: Request) {
 
   if (error) {
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+  }
+
+  // Notify the applicant
+  if (appFull && status !== "pending") {
+    const { data: proj } = await supabase
+      .from("projects")
+      .select("title")
+      .eq("id", app.project_id)
+      .single();
+
+    await sendNotification({
+      userId: appFull.user_id,
+      type: status === "accepted" ? "application_accepted" : "application_rejected",
+      title: status === "accepted" ? "Application Accepted!" : "Application Update",
+      message: status === "accepted"
+        ? `You've been accepted to "${proj?.title || "a project"}"! You can now start working.`
+        : `Your application to "${proj?.title || "a project"}" was not accepted.`,
+      link: status === "accepted" ? `/project/${app.project_id}` : "/profile",
+    });
   }
 
   return NextResponse.json({ message: "Status updated" });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/app/lib/auth";
 import { supabase } from "@/app/lib/db";
+import { sendNotification } from "@/app/lib/notify";
 import crypto from "crypto";
 
 // GET: load reports for a project
@@ -73,6 +74,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to save report" }, { status: 500 });
   }
 
+  // Notify project creator
+  const { data: proj } = await supabase
+    .from("projects")
+    .select("creator_id, title")
+    .eq("id", projectId)
+    .single();
+
+  if (proj && proj.creator_id !== session.user.id) {
+    const { data: submitter } = await supabase
+      .from("users")
+      .select("name")
+      .eq("id", session.user.id)
+      .single();
+
+    await sendNotification({
+      userId: proj.creator_id,
+      type: "new_report",
+      title: "New Milestone Report",
+      message: `${submitter?.name || "Someone"} submitted a milestone report for "${proj.title}"`,
+      link: `/manage-project/${projectId}`,
+    });
+  }
+
   return NextResponse.json({ message: "Report saved" }, { status: 201 });
 }
 
@@ -121,6 +145,31 @@ export async function PUT(request: Request) {
 
   if (error) {
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+  }
+
+  // Notify the report submitter
+  const { data: reportFull } = await supabase
+    .from("milestone_reports")
+    .select("user_id")
+    .eq("id", reportId)
+    .single();
+
+  if (reportFull) {
+    const { data: proj } = await supabase
+      .from("projects")
+      .select("title")
+      .eq("id", report.project_id)
+      .single();
+
+    await sendNotification({
+      userId: reportFull.user_id,
+      type: reviewStatus === "approved" ? "report_approved" : "report_rejected",
+      title: reviewStatus === "approved" ? "Milestone Approved!" : "Milestone Needs Revision",
+      message: reviewStatus === "approved"
+        ? `Your milestone report for "${proj?.title || "a project"}" has been approved!`
+        : `Your milestone report for "${proj?.title || "a project"}" needs revision.${feedback ? " Check the feedback." : ""}`,
+      link: `/project/${report.project_id}`,
+    });
   }
 
   return NextResponse.json({ message: "Review saved" });
