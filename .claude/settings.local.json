@@ -8,7 +8,12 @@
       "Bash(xargs grep:*)",
       "Bash(npm install:*)",
       "Bash(curl -s http://localhost:3000/api/seed)",
-      "Bash(curl -s http://localhost:3000/api/projects)"
+      "Bash(curl -s http://localhost:3000/api/projects)",
+      "Bash(mv \"Thumbnail -  Design.png\" \"design.png\")",
+      "Bash(mv \"Thumbnail -  Design-1.png\" \"design-1.png\")",
+      "Bash(mv \"Thumbnail -  Dev.png\" \"dev.png\")",
+      "Bash(mv \"Thumbnail -  Mobile.png\" \"mobile.png\")",
+      "Bash(mv \"Thumbnail - Marketing.png\" \"marketing.png\")"
     ],
     "additionalDirectories": [
       "k:\\Downloads\\Applicable biuld\\Applicable\\app\\app\\api",

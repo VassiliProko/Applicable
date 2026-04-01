@@ -5,17 +5,17 @@ import { Clock } from "lucide-react";
 import FitTitle from "./FitTitle";
 
 const categoryThumbnails: Record<string, string> = {
-  "Design": "/thumbnails/Thumbnail -  Design.png",
-  "Mobile": "/thumbnails/Thumbnail -  Mobile.png",
-  "Marketing": "/thumbnails/Thumbnail - Marketing.png",
-  "Engineering": "/thumbnails/Thumbnail -  Dev.png",
-  "DevOps": "/thumbnails/Thumbnail -  Dev.png",
-  "Data & Analytics": "/thumbnails/Thumbnail -  Dev.png",
+  "Design": "/thumbnails/design.png",
+  "Mobile": "/thumbnails/mobile.png",
+  "Marketing": "/thumbnails/marketing.png",
+  "Engineering": "/thumbnails/dev.png",
+  "DevOps": "/thumbnails/dev.png",
+  "Data & Analytics": "/thumbnails/dev.png",
 };
 
 function getThumbnail(project: Project): string {
   if (project.imageUrl) return project.imageUrl;
-  return categoryThumbnails[project.category] || "/thumbnails/Thumbnail -  Dev.png";
+  return categoryThumbnails[project.category] || "/thumbnails/dev.png";
 }
 
 export default function ProjectCard({
@@ -36,7 +36,7 @@ export default function ProjectCard({
           onClick(project);
         }
       }}
-      className="flex h-full cursor-pointer flex-col rounded-[12px] border border-transparent bg-surface-1 p-[18px] transition-all duration-200 hover:border-[var(--border-base)] hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
+      className="flex h-full cursor-pointer flex-col rounded-[12px] border border-transparent bg-surface-1 p-3 transition-all duration-200 hover:border-border hover:bg-surface-2 hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
     >
       <FitTitle className="type-title">{project.title}</FitTitle>
 

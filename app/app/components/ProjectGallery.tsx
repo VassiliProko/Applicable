@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { projects as mockProjects } from "@/app/lib/mock-data";
 import { Project } from "@/app/lib/types";
 import ProjectCard from "./ProjectCard";
@@ -76,6 +76,25 @@ export default function ProjectGallery() {
     });
   }, [projects, selectedCategories, selectedSkills, selectedDifficulties, searchQuery]);
 
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const clearAll = useCallback(() => {
     setSelectedCategories([]);
     setSelectedSkills([]);
@@ -109,14 +128,12 @@ export default function ProjectGallery() {
           activeCount={activeCount}
         />
 
-        <div className="mt-8 grid grid-cols-1 gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
+        <div ref={gridRef} className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((project, i) => (
             <div
               key={project.id}
-              style={{
-                animationDelay: `${i * 30}ms`,
-                animationFillMode: "both",
-              }}
+              className={visible ? "card-enter" : "opacity-0"}
+              style={visible ? { animationDelay: `${i * 60}ms` } : undefined}
             >
               <ProjectCard project={project} onClick={setSelectedProject} />
             </div>

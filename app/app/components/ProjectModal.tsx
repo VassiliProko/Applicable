@@ -5,17 +5,17 @@ import { Project } from "@/app/lib/types";
 import { X, Clock, Signal, Check, CheckCircle } from "lucide-react";
 
 const categoryThumbnails: Record<string, string> = {
-  "Design": "/thumbnails/Thumbnail -  Design.png",
-  "Mobile": "/thumbnails/Thumbnail -  Mobile.png",
-  "Marketing": "/thumbnails/Thumbnail - Marketing.png",
-  "Engineering": "/thumbnails/Thumbnail -  Dev.png",
-  "DevOps": "/thumbnails/Thumbnail -  Dev.png",
-  "Data & Analytics": "/thumbnails/Thumbnail -  Dev.png",
+  "Design": "/thumbnails/design.png",
+  "Mobile": "/thumbnails/mobile.png",
+  "Marketing": "/thumbnails/marketing.png",
+  "Engineering": "/thumbnails/dev.png",
+  "DevOps": "/thumbnails/dev.png",
+  "Data & Analytics": "/thumbnails/dev.png",
 };
 
 function getThumbnail(project: Project): string {
   if (project.imageUrl) return project.imageUrl;
-  return categoryThumbnails[project.category] || "/thumbnails/Thumbnail -  Dev.png";
+  return categoryThumbnails[project.category] || "/thumbnails/dev.png";
 }
 
 export default function ProjectModal({
