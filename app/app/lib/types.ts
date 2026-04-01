@@ -1,3 +1,8 @@
+export interface ProjectMilestone {
+  title: string;
+  deadline?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -16,6 +21,7 @@ export interface Project {
     prerequisites: string[];
   };
   applicationQuestions: ApplicationQuestion[];
+  milestones?: ProjectMilestone[];
 }
 
 export interface ApplicationQuestion {

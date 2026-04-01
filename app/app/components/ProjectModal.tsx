@@ -56,9 +56,34 @@ export default function ProjectModal({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    if (!project) return;
+    setSubmitting(true);
+    setSubmitError("");
+
+    const answers = project.applicationQuestions.map((q) => ({
+      questionId: q.id,
+      label: q.label,
+      answer: formData[q.id] || "",
+    }));
+
+    const res = await fetch("/api/applications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId: project.id, answers }),
+    });
+
+    if (res.ok) {
+      setSubmitted(true);
+    } else {
+      const data = await res.json();
+      setSubmitError(data.error === "Already applied" ? "You have already applied to this project." : data.error || "Failed to submit");
+    }
+    setSubmitting(false);
   };
 
   const requiredFilled =
@@ -145,9 +170,9 @@ export default function ProjectModal({
             <div className="mt-6">
               <h3 className="type-title">What You&apos;ll Learn</h3>
               <ul className="mt-3 space-y-2">
-                {project.details.learningOutcomes.map((outcome) => (
+                {project.details.learningOutcomes.map((outcome, oi) => (
                   <li
-                    key={outcome}
+                    key={oi}
                     className="type-body flex items-start gap-2 text-text-secondary"
                   >
                     <Check
@@ -163,9 +188,9 @@ export default function ProjectModal({
             <div className="mt-6">
               <h3 className="type-title">Prerequisites</h3>
               <ul className="mt-3 space-y-2">
-                {project.details.prerequisites.map((prereq) => (
+                {project.details.prerequisites.map((prereq, pi) => (
                   <li
-                    key={prereq}
+                    key={pi}
                     className="type-body flex items-start gap-2 text-text-secondary"
                   >
                     <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-text-tertiary" />
@@ -245,12 +270,15 @@ export default function ProjectModal({
                         )}
                       </div>
                     ))}
+                    {submitError && (
+                      <p className="text-sm text-error mb-2">{submitError}</p>
+                    )}
                     <button
                       type="submit"
-                      disabled={!requiredFilled}
+                      disabled={!requiredFilled || submitting}
                       className="h-12 w-full rounded-[6px] bg-primary text-base font-medium text-white transition-all duration-100 hover:bg-primary-hover active:bg-primary-active active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-40 disabled:pointer-events-none"
                     >
-                      Submit Application
+                      {submitting ? "Submitting..." : "Submit Application"}
                     </button>
                   </form>
                 </>

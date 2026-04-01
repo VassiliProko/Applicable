@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { projects } from "@/app/lib/mock-data";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { projects as mockProjects } from "@/app/lib/mock-data";
 import { Project } from "@/app/lib/types";
 import ProjectCard from "./ProjectCard";
 import ProjectModal from "./ProjectModal";
@@ -12,22 +12,33 @@ function toggle(arr: string[], value: string) {
 }
 
 export default function ProjectGallery() {
+  const [projects, setProjects] = useState<Project[]>(mockProjects);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
-  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>(
-    []
-  );
+  const [selectedDifficulties, setSelectedDifficulties] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Fetch projects from DB, fall back to mock data
+  useEffect(() => {
+    fetch("/api/projects")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProjects(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const categories = useMemo(
     () => [...new Set(projects.map((p) => p.category))].sort(),
-    []
+    [projects]
   );
 
   const skills = useMemo(
     () => [...new Set(projects.flatMap((p) => p.skillTags))].sort(),
-    []
+    [projects]
   );
 
   const activeCount =
@@ -63,7 +74,7 @@ export default function ProjectGallery() {
         return false;
       return true;
     });
-  }, [selectedCategories, selectedSkills, selectedDifficulties, searchQuery]);
+  }, [projects, selectedCategories, selectedSkills, selectedDifficulties, searchQuery]);
 
   const clearAll = useCallback(() => {
     setSelectedCategories([]);

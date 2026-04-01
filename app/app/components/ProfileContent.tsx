@@ -285,9 +285,9 @@ export default function ProfileContent() {
           />
         ) : skillsList.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {skillsList.map((skill) => (
+            {skillsList.map((skill, i) => (
               <span
-                key={skill}
+                key={`${skill}-${i}`}
                 className="rounded-full bg-primary-tint px-4 py-1.5 text-sm font-medium text-primary"
               >
                 {skill}

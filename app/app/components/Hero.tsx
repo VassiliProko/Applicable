@@ -35,7 +35,7 @@ export default function Hero() {
             </a>
           </div>
           <a
-            href="#"
+            href="/create-project"
             className="inline-flex items-center gap-2 rounded-[9px] border-2 border-border bg-[#27272a] px-6 font-body text-base font-medium text-white transition-colors duration-100 hover:border-[#71717a] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             style={{ fontFamily: "var(--font-source-sans), 'Helvetica Neue', Arial, sans-serif" }}
           >

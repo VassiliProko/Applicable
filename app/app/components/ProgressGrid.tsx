@@ -6,7 +6,13 @@ const COLS = 14;
 const ROWS = 10;
 const TOTAL = COLS * ROWS;
 
-export default function ProgressGrid({ percent }: { percent: number }) {
+export default function ProgressGrid({
+  percent,
+  completed = false,
+}: {
+  percent: number;
+  completed?: boolean;
+}) {
   const filledCount = Math.round((percent / 100) * TOTAL);
 
   const { filledSet, opacities } = useMemo(() => {
@@ -66,11 +72,13 @@ export default function ProgressGrid({ percent }: { percent: number }) {
         })}
       </div>
 
-      {/* Radial vignette overlay */}
+      {/* Radial vignette overlay — orange when completed */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none transition-all duration-1000"
         style={{
-          background: "radial-gradient(ellipse at center, transparent 25%, var(--surface-1) 75%)",
+          background: completed
+            ? "radial-gradient(ellipse at center, transparent 10%, var(--primary-500) 75%)"
+            : "radial-gradient(ellipse at center, transparent 25%, var(--surface-1) 75%)",
         }}
       />
     </div>

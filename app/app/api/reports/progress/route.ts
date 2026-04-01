@@ -11,7 +11,8 @@ export async function GET() {
   const { data: reports, error } = await supabase
     .from("milestone_reports")
     .select("project_id")
-    .eq("user_id", session.user.id);
+    .eq("user_id", session.user.id)
+    .eq("review_status", "approved");
 
   if (error) {
     return NextResponse.json({ error: "Failed to load progress" }, { status: 500 });

@@ -3,54 +3,34 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Project } from "@/app/lib/types";
-import { projects } from "@/app/lib/mock-data";
-import { Clock, FileText, ArrowUpDown } from "lucide-react";
+import { Clock, FileText, ArrowUpDown, Settings } from "lucide-react";
 import FitTitle from "./FitTitle";
 import ProgressGrid from "./ProgressGrid";
 import ProjectModal from "./ProjectModal";
 
-const staticTabs = ["Ongoing", "Applied", "Posted"] as const;
+const staticTabs = ["Ongoing", "Applied", "Created", "Posted"] as const;
 type Tab = (typeof staticTabs)[number];
 
-type ApplicationStatus = "accepted" | "rejected" | "in review";
-
-// Mock data: assign projects to tabs, with application statuses for "Applied"
-const appliedProjects = [projects[0], projects[1], projects[2], projects[5]];
-
-const applicationStatus: Record<string, ApplicationStatus> = {
-  [projects[0].id]: "in review",
-  [projects[1].id]: "accepted",
-  [projects[2].id]: "rejected",
-  [projects[5].id]: "in review",
-};
-
-// Ongoing = existing ongoing + accepted from applied
-const acceptedApplied = appliedProjects.filter(
-  (p) => applicationStatus[p.id] === "accepted"
-);
-const ongoingBase = [projects[3], projects[4]];
-const ongoingIds = new Set(ongoingBase.map((p) => p.id));
-const ongoingProjects = [
-  ...ongoingBase,
-  ...acceptedApplied.filter((p) => !ongoingIds.has(p.id)),
-];
-
-const projectsByTab: Record<"Ongoing" | "Applied", Project[]> = {
-  Ongoing: ongoingProjects,
-  Applied: appliedProjects,
-};
+type ApplicationStatus = "pending" | "accepted" | "rejected";
 
 const statusStyles: Record<ApplicationStatus, string> = {
   accepted: "bg-success/15 text-success",
   rejected: "bg-error/15 text-error",
-  "in review": "bg-secondary/15 text-secondary",
+  pending: "bg-secondary/15 text-secondary",
 };
 
 const statusLabels: Record<ApplicationStatus, string> = {
   accepted: "Accepted",
   rejected: "Rejected",
-  "in review": "In Review",
+  pending: "In Review",
 };
+
+interface ApplicationData {
+  id: string;
+  project_id: string;
+  status: ApplicationStatus;
+  created_at: string;
+}
 
 interface CaseStudy {
   id: string;
@@ -69,7 +49,30 @@ export default function ProfileProjects() {
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
   const [appliedSort, setAppliedSort] = useState<"status" | "name" | "company" | "difficulty">("status");
 
+  // Real data
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [myApplications, setMyApplications] = useState<ApplicationData[]>([]);
+  const [createdProjects, setCreatedProjects] = useState<Project[]>([]);
+  const [approvedSubmissions, setApprovedSubmissions] = useState<Set<string>>(new Set());
+
   useEffect(() => {
+    // Fetch all projects
+    fetch("/api/projects")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setAllProjects(data);
+      })
+      .catch(() => {});
+
+    // Fetch my applications
+    fetch("/api/applications?mine=true")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setMyApplications(data);
+      })
+      .catch(() => {});
+
+    // Fetch progress
     fetch("/api/reports/progress")
       .then((res) => res.json())
       .then((data) => {
@@ -77,34 +80,59 @@ export default function ProfileProjects() {
       })
       .catch(() => {});
 
+    // Fetch my submissions to check which projects are fully approved
+    fetch("/api/submissions?mine=true")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const approved = new Set<string>();
+          data.forEach((s: { project_id: string; status: string }) => {
+            if (s.status === "approved") approved.add(s.project_id);
+          });
+          setApprovedSubmissions(approved);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch case studies
     fetch("/api/case-studies")
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setCaseStudies(data);
       })
       .catch(() => {});
+
+    // Fetch created projects
+    fetch("/api/profile")
+      .then((res) => res.json())
+      .then((user) => {
+        if (user?.id) {
+          fetch("/api/projects")
+            .then((res) => res.json())
+            .then((projects) => {
+              if (Array.isArray(projects)) {
+                setCreatedProjects(projects.filter((p: Project & { creatorId?: string }) => p.creatorId === user.id));
+              }
+            });
+        }
+      })
+      .catch(() => {});
   }, []);
 
-  function handleProjectClick(project: Project) {
-    const isOngoing = activeTab === "Ongoing";
-    const isAccepted =
-      activeTab === "Applied" && applicationStatus[project.id] === "accepted";
+  // Derive applied projects from applications + all projects
+  const appliedProjects = myApplications
+    .map((app) => {
+      const project = allProjects.find((p) => p.id === app.project_id);
+      return project ? { ...project, applicationStatus: app.status } : null;
+    })
+    .filter(Boolean) as (Project & { applicationStatus: ApplicationStatus })[];
 
-    if (isOngoing || isAccepted) {
-      router.push(`/project/${project.id}`);
-    } else {
-      setSelectedProject(project);
-    }
-  }
-
-  function getTabCount(tab: Tab): number {
-    if (tab === "Posted") return caseStudies.length;
-    return projectsByTab[tab].length;
-  }
+  // Ongoing = accepted applications
+  const ongoingProjects = appliedProjects.filter((p) => p.applicationStatus === "accepted");
 
   const statusOrder: Record<ApplicationStatus, number> = {
     accepted: 0,
-    "in review": 1,
+    pending: 1,
     rejected: 2,
   };
 
@@ -114,15 +142,11 @@ export default function ProfileProjects() {
     Advanced: 2,
   };
 
-  function getSortedApplied(): Project[] {
-    const items = [...projectsByTab.Applied];
+  function getSortedApplied() {
+    const items = [...appliedProjects];
     switch (appliedSort) {
       case "status":
-        return items.sort((a, b) => {
-          const sa = applicationStatus[a.id] ? statusOrder[applicationStatus[a.id]] : 99;
-          const sb = applicationStatus[b.id] ? statusOrder[applicationStatus[b.id]] : 99;
-          return sa - sb;
-        });
+        return items.sort((a, b) => statusOrder[a.applicationStatus] - statusOrder[b.applicationStatus]);
       case "name":
         return items.sort((a, b) => a.title.localeCompare(b.title));
       case "company":
@@ -131,6 +155,32 @@ export default function ProfileProjects() {
         return items.sort((a, b) => difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty]);
       default:
         return items;
+    }
+  }
+
+  function handleProjectClick(project: Project, tab: Tab) {
+    if (tab === "Ongoing") {
+      router.push(`/project/${project.id}`);
+    } else if (tab === "Applied") {
+      const app = appliedProjects.find((p) => p.id === project.id);
+      if (app?.applicationStatus === "accepted") {
+        router.push(`/project/${project.id}`);
+      } else {
+        setSelectedProject(project);
+      }
+    } else if (tab === "Created") {
+      router.push(`/manage-project/${project.id}`);
+    } else {
+      setSelectedProject(project);
+    }
+  }
+
+  function getTabCount(tab: Tab): number {
+    switch (tab) {
+      case "Ongoing": return ongoingProjects.length;
+      case "Applied": return appliedProjects.length;
+      case "Created": return createdProjects.length;
+      case "Posted": return caseStudies.length;
     }
   }
 
@@ -162,11 +212,62 @@ export default function ProfileProjects() {
         ))}
       </div>
 
-      {/* Ongoing & Applied Cards */}
-      {(activeTab === "Ongoing" || activeTab === "Applied") && (
+      {/* Ongoing Tab */}
+      {activeTab === "Ongoing" && (
         <>
-          {/* Sort dropdown for Applied */}
-          {activeTab === "Applied" && projectsByTab.Applied.length > 1 && (
+          {ongoingProjects.length > 0 ? (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {ongoingProjects.map((project) => {
+                const totalMilestones = project.milestones?.length || project.details.learningOutcomes.length;
+                const completed = progress[project.id] || 0;
+                const percent = totalMilestones > 0 ? Math.round((completed / totalMilestones) * 100) : 0;
+
+                return (
+                  <div
+                    key={project.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleProjectClick(project, "Ongoing")}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleProjectClick(project, "Ongoing"); } }}
+                    className="flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
+                  >
+                    <FitTitle className="type-title">{project.title}</FitTitle>
+                    <div className="mt-3">
+                      <ProgressGrid percent={percent} completed={approvedSubmissions.has(project.id)} />
+                    </div>
+                    <p className="type-body mt-3 line-clamp-2 text-text-secondary">{project.tagline}</p>
+                    <div className="mt-auto flex items-center justify-between pt-4">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
+                          {project.logoUrl ? (
+                            <img src={project.logoUrl} alt={`${project.companyName} logo`} className="h-6 w-6 object-contain" />
+                          ) : (
+                            <span className="text-sm font-semibold text-black">{project.companyName.charAt(0)}</span>
+                          )}
+                        </div>
+                        <span className="type-caption font-medium text-text-secondary">{project.companyName}</span>
+                      </div>
+                      <span className="type-caption inline-flex items-center gap-1 text-text-tertiary">
+                        <Clock size={12} />
+                        {project.timeCommitment}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-border bg-surface-1 p-10 text-center">
+              <p className="type-body text-text-tertiary">No ongoing projects. Apply to a project and get accepted to start working.</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Applied Tab */}
+      {activeTab === "Applied" && (
+        <>
+          {appliedProjects.length > 1 && (
             <div className="mt-4 flex items-center gap-2">
               <ArrowUpDown size={14} className="text-text-tertiary" />
               <span className="type-caption text-text-tertiary">Sort by</span>
@@ -183,101 +284,95 @@ export default function ProfileProjects() {
             </div>
           )}
 
-          {(activeTab === "Applied" ? getSortedApplied() : projectsByTab[activeTab]).length > 0 ? (
-            <div className={`${activeTab === "Applied" && projectsByTab.Applied.length > 1 ? "mt-3" : "mt-4"} grid gap-4 sm:grid-cols-2 lg:grid-cols-3`}>
-              {(activeTab === "Applied" ? getSortedApplied() : projectsByTab[activeTab]).map((project) => {
-                const status =
-                  activeTab === "Applied"
-                    ? applicationStatus[project.id]
-                    : undefined;
-
-                return (
-                  <div
-                    key={project.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleProjectClick(project)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handleProjectClick(project);
-                      }
-                    }}
-                    className="relative flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
-                  >
-                    {/* Status Tag */}
-                    {status && (
-                      <span
-                        className={`absolute top-3 right-3 rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[status]}`}
-                      >
-                        {statusLabels[status]}
-                      </span>
+          {appliedProjects.length > 0 ? (
+            <div className={`${appliedProjects.length > 1 ? "mt-3" : "mt-4"} grid gap-4 sm:grid-cols-2 lg:grid-cols-3`}>
+              {getSortedApplied().map((project) => (
+                <div
+                  key={project.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleProjectClick(project, "Applied")}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleProjectClick(project, "Applied"); } }}
+                  className="relative flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
+                >
+                  <span className={`absolute top-3 right-3 rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[project.applicationStatus]}`}>
+                    {statusLabels[project.applicationStatus]}
+                  </span>
+                  <FitTitle className="type-title pr-20">{project.title}</FitTitle>
+                  <div className="mt-3 aspect-4/3 w-full overflow-hidden rounded-lg bg-black">
+                    {project.imageUrl && (
+                      <img src={project.imageUrl} alt={project.title} className="h-full w-full object-cover" />
                     )}
-
-                    <FitTitle className="type-title pr-20">
-                      {project.title}
-                    </FitTitle>
-
-                    {/* Grid for ongoing, image for applied */}
-                    {activeTab === "Ongoing" ? (
-                      (() => {
-                        const totalMilestones = project.details.learningOutcomes.length;
-                        const completed = progress[project.id] || 0;
-                        const percent = totalMilestones > 0 ? Math.round((completed / totalMilestones) * 100) : 0;
-                        return (
-                          <div className="mt-3">
-                            <ProgressGrid percent={percent} />
-                          </div>
-                        );
-                      })()
-                    ) : (
-                      <div className="mt-3 aspect-4/3 w-full overflow-hidden rounded-lg bg-black">
-                        {project.imageUrl && (
-                          <img
-                            src={project.imageUrl}
-                            alt={project.title}
-                            className="h-full w-full object-cover"
-                          />
+                  </div>
+                  <p className="type-body mt-3 line-clamp-2 text-text-secondary">{project.tagline}</p>
+                  <div className="mt-auto flex items-center justify-between pt-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
+                        {project.logoUrl ? (
+                          <img src={project.logoUrl} alt={`${project.companyName} logo`} className="h-6 w-6 object-contain" />
+                        ) : (
+                          <span className="text-sm font-semibold text-black">{project.companyName.charAt(0)}</span>
                         )}
                       </div>
-                    )}
-
-                    <p className="type-body mt-3 line-clamp-2 text-text-secondary">
-                      {project.tagline}
-                    </p>
-
-                    <div className="mt-auto flex items-center justify-between pt-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
-                          {project.logoUrl ? (
-                            <img
-                              src={project.logoUrl}
-                              alt={`${project.companyName} logo`}
-                              className="h-6 w-6 object-contain"
-                            />
-                          ) : (
-                            <span className="text-sm font-semibold text-black">
-                              {project.companyName.charAt(0)}
-                            </span>
-                          )}
-                        </div>
-                        <span className="type-caption font-medium text-text-secondary">
-                          {project.companyName}
-                        </span>
-                      </div>
-                      <span className="type-caption inline-flex items-center gap-1 text-text-tertiary">
-                        <Clock size={12} />
-                        {project.timeCommitment}
-                      </span>
+                      <span className="type-caption font-medium text-text-secondary">{project.companyName}</span>
                     </div>
+                    <span className="type-caption inline-flex items-center gap-1 text-text-tertiary">
+                      <Clock size={12} />
+                      {project.timeCommitment}
+                    </span>
                   </div>
-                );
-              })}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-border bg-surface-1 p-10 text-center">
+              <p className="type-body text-text-tertiary">No applications yet. Browse projects and apply to one that interests you.</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Created Tab */}
+      {activeTab === "Created" && (
+        <>
+          {createdProjects.length > 0 ? (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {createdProjects.map((project) => (
+                <div
+                  key={project.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleProjectClick(project, "Created")}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleProjectClick(project, "Created"); } }}
+                  className="flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="type-caption rounded-full bg-accent/10 px-2.5 py-0.5 font-medium text-accent">Creator</span>
+                    <Settings size={14} className="text-text-tertiary" />
+                  </div>
+                  <FitTitle className="type-title">{project.title}</FitTitle>
+                  <p className="type-body mt-2 line-clamp-2 text-text-secondary">{project.tagline}</p>
+                  <div className="mt-auto flex items-center justify-between pt-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
+                        {project.logoUrl ? (
+                          <img src={project.logoUrl} alt={`${project.companyName} logo`} className="h-6 w-6 object-contain" />
+                        ) : (
+                          <span className="text-sm font-semibold text-black">{project.companyName.charAt(0)}</span>
+                        )}
+                      </div>
+                      <span className="type-caption font-medium text-text-secondary">{project.companyName}</span>
+                    </div>
+                    <span className="type-caption text-text-tertiary">{project.category}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="mt-4 rounded-xl border border-border bg-surface-1 p-10 text-center">
               <p className="type-body text-text-tertiary">
-                No {activeTab.toLowerCase()} projects yet.
+                No projects created yet.{" "}
+                <a href="/create-project" className="text-accent hover:underline">Post a project</a> for others to join.
               </p>
             </div>
           )}
@@ -295,59 +390,33 @@ export default function ProfileProjects() {
                   role="button"
                   tabIndex={0}
                   onClick={() => router.push(`/case-study/${cs.id}`)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      router.push(`/case-study/${cs.id}`);
-                    }
-                  }}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/case-study/${cs.id}`); } }}
                   className="flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
-                      <span className="text-sm font-semibold text-black">
-                        {cs.company_name.charAt(0)}
-                      </span>
+                      <span className="text-sm font-semibold text-black">{cs.company_name.charAt(0)}</span>
                     </div>
-                    <span className="type-caption font-medium text-text-secondary">
-                      {cs.company_name}
-                    </span>
+                    <span className="type-caption font-medium text-text-secondary">{cs.company_name}</span>
                   </div>
-
-                  <FitTitle className="type-title">
-                    {cs.project_title}
-                  </FitTitle>
-
+                  <FitTitle className="type-title">{cs.project_title}</FitTitle>
                   <p className="type-body mt-2 text-text-tertiary">
-                    {cs.sections.length} section
-                    {cs.sections.length !== 1 ? "s" : ""}
+                    {cs.sections.length} section{cs.sections.length !== 1 ? "s" : ""}
                   </p>
-
                   <div className="mt-3 space-y-1.5">
                     {cs.sections.slice(0, 3).map((s, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-2 type-caption text-text-secondary"
-                      >
+                      <div key={i} className="flex items-center gap-2 type-caption text-text-secondary">
                         <FileText size={12} className="shrink-0 text-accent" />
                         <span className="truncate">{s.title}</span>
                       </div>
                     ))}
                     {cs.sections.length > 3 && (
-                      <p className="type-caption text-text-tertiary">
-                        +{cs.sections.length - 3} more
-                      </p>
+                      <p className="type-caption text-text-tertiary">+{cs.sections.length - 3} more</p>
                     )}
                   </div>
-
                   <div className="mt-auto pt-4">
                     <span className="type-caption text-text-tertiary">
-                      Posted{" "}
-                      {new Date(cs.created_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                      Posted {new Date(cs.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </span>
                   </div>
                 </div>
@@ -355,13 +424,9 @@ export default function ProfileProjects() {
             </div>
           ) : (
             <div className="mt-4 rounded-xl border border-border bg-surface-1 p-10 text-center">
-              <FileText
-                size={40}
-                className="mx-auto text-text-disabled mb-3"
-              />
+              <FileText size={40} className="mx-auto text-text-disabled mb-3" />
               <p className="type-body text-text-tertiary">
-                No case studies posted yet. Complete a project and publish your
-                case study from the dashboard.
+                No case studies posted yet. Complete a project and publish your case study from the dashboard.
               </p>
             </div>
           )}
@@ -372,7 +437,7 @@ export default function ProfileProjects() {
       <ProjectModal
         project={selectedProject}
         onClose={() => setSelectedProject(null)}
-        showApply={false}
+        showApply={activeTab !== "Applied"}
       />
     </section>
   );

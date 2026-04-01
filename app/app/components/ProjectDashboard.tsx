@@ -40,6 +40,8 @@ interface MilestoneReport {
   details: string;
   files: { name: string; type: string; url: string }[];
   link?: string;
+  reviewStatus?: "pending" | "approved" | "rejected";
+  feedback?: string;
 }
 
 interface Milestone {
@@ -94,9 +96,24 @@ export default function ProjectDashboard({ project }: { project: Project }) {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<DashboardTab>("Brief");
 
-  // Milestones from learning outcomes with staggered deadlines
-  const [milestones, setMilestones] = useState<Milestone[]>(
-    project.details.learningOutcomes.map((outcome, i) => {
+  // Milestones: use project.milestones if available, fall back to learningOutcomes
+  const [milestones, setMilestones] = useState<Milestone[]>(() => {
+    if (project.milestones && project.milestones.length > 0) {
+      return project.milestones.map((ms, i) => {
+        const deadline = ms.deadline || (() => {
+          const d = new Date();
+          d.setDate(d.getDate() + 7 * (i + 1));
+          return d.toISOString().split("T")[0];
+        })();
+        return {
+          id: `m-${i}`,
+          text: ms.title,
+          done: false,
+          deadline,
+        };
+      });
+    }
+    return project.details.learningOutcomes.map((outcome, i) => {
       const deadline = new Date();
       deadline.setDate(deadline.getDate() + 7 * (i + 1));
       return {
@@ -105,27 +122,30 @@ export default function ProjectDashboard({ project }: { project: Project }) {
         done: false,
         deadline: deadline.toISOString().split("T")[0],
       };
-    })
-  );
+    });
+  });
 
   // Load saved reports from API on mount
   useEffect(() => {
     fetch(`/api/reports?projectId=${project.id}`)
       .then((res) => res.json())
-      .then((reports: { milestone_id: string; summary: string; details: string; files: { name: string; type: string; url: string }[]; link?: string }[]) => {
+      .then((reports: { milestone_id: string; summary: string; details: string; files: { name: string; type: string; url: string }[]; link?: string; review_status?: string; feedback?: string }[]) => {
         if (!Array.isArray(reports)) return;
         setMilestones((prev) =>
           prev.map((m) => {
             const saved = reports.find((r) => r.milestone_id === m.id);
             if (saved) {
+              const reviewStatus = (saved.review_status || "pending") as "pending" | "approved" | "rejected";
               return {
                 ...m,
-                done: true,
+                done: reviewStatus === "approved",
                 report: {
                   summary: saved.summary,
                   details: saved.details,
                   files: saved.files,
                   link: saved.link || undefined,
+                  reviewStatus,
+                  feedback: saved.feedback || undefined,
                 },
               };
             }
@@ -235,52 +255,61 @@ export default function ProjectDashboard({ project }: { project: Project }) {
     },
   ]);
 
-  // Team
-  const [teamMembers] = useState<TeamMember[]>([
-    {
-      id: "tm-1",
-      name: "John Doe",
-      email: "johndoe@email.com",
-      role: "Full-Stack Developer",
-      location: "San Francisco, CA",
-      bio: "Passionate developer who loves building products that make a difference.",
-      skills: ["React", "TypeScript", "Node.js"],
-      avatarSeed: "JD",
-    },
-    {
-      id: "tm-2",
-      name: "Sarah Chen",
-      email: "sarah.chen@email.com",
-      role: "Frontend Engineer",
-      location: "New York, NY",
-      bio: "UI/UX enthusiast with a focus on accessible and performant web applications.",
-      skills: ["React", "CSS", "Accessibility"],
-      avatarSeed: "SC",
-    },
-    {
-      id: "tm-3",
-      name: "Marcus Rivera",
-      email: "m.rivera@email.com",
-      role: "Backend Developer",
-      location: "Austin, TX",
-      bio: "Systems thinker who enjoys designing APIs and database architectures.",
-      skills: ["Node.js", "PostgreSQL", "Docker"],
-      avatarSeed: "MR",
-    },
-    {
-      id: "tm-4",
-      name: "Aisha Patel",
-      email: "aisha.p@email.com",
-      role: "Product Designer",
-      location: "London, UK",
-      bio: "Design-driven problem solver focused on user research and prototyping.",
-      skills: ["Figma", "UX Research", "Prototyping"],
-      avatarSeed: "AP",
-    },
-  ]);
+  // Team — fetch accepted members from API
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
 
+  useEffect(() => {
+    fetch(`/api/applications/team?projectId=${project.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setTeamMembers(data);
+      })
+      .catch(() => {});
+  }, [project.id]);
+
   // Case Study
+  // Final submission
+  const [submissionStatus, setSubmissionStatus] = useState<"none" | "pending" | "approved" | "rejected">("none");
+  const [submissionFeedback, setSubmissionFeedback] = useState("");
+  const [submittingFinal, setSubmittingFinal] = useState(false);
+
+  // Load submission status on mount
+  useEffect(() => {
+    fetch(`/api/submissions?projectId=${project.id}&mine=true`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          // Find my submission
+          const mine = data.find((s: { user_id?: string }) => true);
+          if (mine) {
+            setSubmissionStatus(mine.status);
+            if (mine.feedback) setSubmissionFeedback(mine.feedback);
+            if (mine.deliverables && Array.isArray(mine.deliverables) && mine.deliverables.length > 0) {
+              setDeliverables(mine.deliverables);
+            }
+          }
+        }
+      })
+      .catch(() => {});
+  }, [project.id]);
+
+  async function submitFinalProject() {
+    setSubmittingFinal(true);
+    const res = await fetch("/api/submissions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        projectId: project.id,
+        deliverables,
+      }),
+    });
+    if (res.ok) {
+      setSubmissionStatus("pending");
+    }
+    setSubmittingFinal(false);
+  }
+
   const [caseStudyEdits, setCaseStudyEdits] = useState<
     Record<string, { summary: string; details: string }>
   >({});
@@ -370,7 +399,7 @@ export default function ProjectDashboard({ project }: { project: Project }) {
       setMilestones((prev) =>
         prev.map((m) =>
           m.id === reportMilestone.id
-            ? { ...m, done: true, report }
+            ? { ...m, done: false, report: { ...report, reviewStatus: "pending" } }
             : m
         )
       );
@@ -967,9 +996,9 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                 What You&apos;ll Learn
               </h2>
               <ul className="mt-3 space-y-3">
-                {project.details.learningOutcomes.map((outcome) => (
+                {project.details.learningOutcomes.map((outcome, oi) => (
                   <li
-                    key={outcome}
+                    key={oi}
                     className="type-body flex items-start gap-2 text-text-secondary"
                   >
                     <Check
@@ -985,9 +1014,9 @@ export default function ProjectDashboard({ project }: { project: Project }) {
             <div className="py-8">
               <h2 className="type-title text-text-primary">Prerequisites</h2>
               <ul className="mt-3 space-y-3">
-                {project.details.prerequisites.map((prereq) => (
+                {project.details.prerequisites.map((prereq, pi) => (
                   <li
-                    key={prereq}
+                    key={pi}
                     className="type-body flex items-start gap-2 text-text-secondary"
                   >
                     <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-text-tertiary" />
@@ -1046,14 +1075,45 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                         >
                           {milestone.text}
                         </span>
-                        <div className="flex items-center gap-2 mt-0.5">
+                        <div className="flex flex-col gap-1 mt-0.5">
                           {milestone.done && milestone.report ? (
-                            <button
-                              onClick={() => setViewingReport({ milestone, report: milestone.report! })}
-                              className="type-caption text-accent hover:underline text-left"
-                            >
-                              View Report
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <span className="type-caption rounded-full bg-success/15 px-2 py-0.5 text-success font-medium">Approved</span>
+                              <button
+                                onClick={() => setViewingReport({ milestone, report: milestone.report! })}
+                                className="type-caption text-accent hover:underline"
+                              >
+                                View Report
+                              </button>
+                            </div>
+                          ) : milestone.report?.reviewStatus === "pending" ? (
+                            <div className="flex items-center gap-2">
+                              <span className="type-caption rounded-full bg-secondary/15 px-2 py-0.5 text-secondary font-medium">Under Review</span>
+                              <button
+                                onClick={() => setViewingReport({ milestone, report: milestone.report! })}
+                                className="type-caption text-accent hover:underline"
+                              >
+                                View Report
+                              </button>
+                            </div>
+                          ) : milestone.report?.reviewStatus === "rejected" ? (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <span className="type-caption rounded-full bg-error/15 px-2 py-0.5 text-error font-medium">Needs Revision</span>
+                                <button
+                                  onClick={() => setViewingReport({ milestone, report: milestone.report! })}
+                                  className="type-caption text-accent hover:underline"
+                                >
+                                  View Report
+                                </button>
+                              </div>
+                              {milestone.report?.feedback && (
+                                <div className="rounded-lg bg-error/5 border border-error/20 px-3 py-2 mt-1">
+                                  <p className="type-caption font-medium text-error">Feedback:</p>
+                                  <p className="type-caption text-text-secondary">{milestone.report.feedback}</p>
+                                </div>
+                              )}
+                            </>
                           ) : (
                             <span
                               className={`type-caption inline-flex items-center gap-1 ${
@@ -1068,13 +1128,14 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                           )}
                         </div>
                       </div>
-                      {!milestone.done && (
+                      {/* Show submit button for: no report yet, or rejected report */}
+                      {!milestone.done && (!milestone.report || milestone.report.reviewStatus === "rejected") && (
                         <button
                           onClick={() => openReport(milestone)}
                           className="shrink-0 flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-hover transition-colors"
                         >
                           <FileText size={12} />
-                          Submit Report
+                          {milestone.report?.reviewStatus === "rejected" ? "Resubmit" : "Submit Report"}
                         </button>
                       )}
                     </li>
@@ -1228,35 +1289,73 @@ export default function ProjectDashboard({ project }: { project: Project }) {
               <h2 className="type-title text-text-primary mb-2">
                 Final Submission
               </h2>
-              <p className="type-body text-text-tertiary mb-5">
-                Once you&apos;ve completed all milestones and added your
-                deliverables, submit your project for review.
-              </p>
 
-              <div className="flex items-center justify-between mb-5">
-                <span className="type-body text-text-secondary">
-                  Milestones completed
-                </span>
-                <span className="type-body font-medium text-text-primary">
-                  {completedMilestones}/{milestones.length}
-                </span>
-              </div>
+              {submissionStatus === "approved" ? (
+                <div className="rounded-lg bg-success/10 border border-success/20 p-5 text-center">
+                  <CheckCircle2 size={32} className="mx-auto text-success mb-2" />
+                  <p className="type-body font-medium text-success">Project Approved!</p>
+                  <p className="type-caption text-text-secondary mt-1">
+                    Congratulations! Your project submission has been approved by the creator.
+                  </p>
+                </div>
+              ) : submissionStatus === "pending" ? (
+                <div className="rounded-lg bg-secondary/10 border border-secondary/20 p-5 text-center">
+                  <Clock size={32} className="mx-auto text-secondary mb-2" />
+                  <p className="type-body font-medium text-secondary">Under Review</p>
+                  <p className="type-caption text-text-secondary mt-1">
+                    Your submission is being reviewed by the project creator. You&apos;ll be notified once they respond.
+                  </p>
+                </div>
+              ) : submissionStatus === "rejected" ? (
+                <div>
+                  <div className="rounded-lg bg-error/10 border border-error/20 p-5 mb-5">
+                    <p className="type-body font-medium text-error">Submission Needs Revision</p>
+                    {submissionFeedback && (
+                      <div className="mt-2">
+                        <p className="type-caption font-medium text-text-tertiary">Feedback:</p>
+                        <p className="type-body text-text-secondary mt-1">{submissionFeedback}</p>
+                      </div>
+                    )}
+                  </div>
 
-              <button
-                disabled={
-                  completedMilestones < milestones.length ||
-                  deliverables.length === 0
-                }
-                className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-white transition-colors hover:bg-primary-hover active:bg-primary-active disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Submit Project for Review
-              </button>
-              {(completedMilestones < milestones.length ||
-                deliverables.length === 0) && (
-                <p className="type-caption mt-2 text-text-tertiary text-center">
-                  Complete all milestones and add at least one deliverable to
-                  submit.
-                </p>
+                  <div className="flex items-center justify-between mb-5">
+                    <span className="type-body text-text-secondary">Milestones completed</span>
+                    <span className="type-body font-medium text-text-primary">{completedMilestones}/{milestones.length}</span>
+                  </div>
+
+                  <button
+                    onClick={submitFinalProject}
+                    disabled={deliverables.length === 0 || submittingFinal}
+                    className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-white transition-colors hover:bg-primary-hover active:bg-primary-active disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {submittingFinal ? "Resubmitting..." : "Resubmit for Review"}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="type-body text-text-tertiary mb-5">
+                    Once you&apos;ve completed all milestones and added your
+                    deliverables, submit your project for review.
+                  </p>
+
+                  <div className="flex items-center justify-between mb-5">
+                    <span className="type-body text-text-secondary">Milestones completed</span>
+                    <span className="type-body font-medium text-text-primary">{completedMilestones}/{milestones.length}</span>
+                  </div>
+
+                  <button
+                    onClick={submitFinalProject}
+                    disabled={completedMilestones < milestones.length || deliverables.length === 0 || submittingFinal}
+                    className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-white transition-colors hover:bg-primary-hover active:bg-primary-active disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {submittingFinal ? "Submitting..." : "Submit Project for Review"}
+                  </button>
+                  {(completedMilestones < milestones.length || deliverables.length === 0) && (
+                    <p className="type-caption mt-2 text-text-tertiary text-center">
+                      Complete all milestones and add at least one deliverable to submit.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>
