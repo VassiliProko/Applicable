@@ -5,17 +5,17 @@ import { Clock } from "lucide-react";
 import FitTitle from "./FitTitle";
 
 const categoryThumbnails: Record<string, string> = {
-  "Design": "/thumbnails/design.png",
-  "Mobile": "/thumbnails/mobile.png",
-  "Marketing": "/thumbnails/marketing.png",
-  "Engineering": "/thumbnails/dev.png",
-  "DevOps": "/thumbnails/dev.png",
-  "Data & Analytics": "/thumbnails/dev.png",
+  "Design": "/Thumbnails/design.png",
+  "Mobile": "/Thumbnails/mobile.png",
+  "Marketing": "/Thumbnails/marketing.png",
+  "Engineering": "/Thumbnails/dev.png",
+  "DevOps": "/Thumbnails/dev.png",
+  "Data & Analytics": "/Thumbnails/dev.png",
 };
 
 function getThumbnail(project: Project): string {
   if (project.imageUrl) return project.imageUrl;
-  return categoryThumbnails[project.category] || "/thumbnails/dev.png";
+  return categoryThumbnails[project.category] || "/Thumbnails/dev.png";
 }
 
 export default function ProjectCard({
