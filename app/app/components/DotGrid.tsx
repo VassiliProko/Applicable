@@ -2,89 +2,69 @@
 
 import { useRef, useEffect, useCallback } from "react";
 
-interface Dot {
-  baseX: number;
-  baseY: number;
+interface Cell {
+  col: number;
+  row: number;
   x: number;
   y: number;
-  radius: number;
-  opacity: number;
-  vx: number;
-  vy: number;
-}
-
-interface TrailDot {
-  x: number;
-  y: number;
-  radius: number;
-  born: number;
-  lifetime: number;
+  inPatch: boolean;
+  baseOpacity: number;
+  currentOpacity: number;
+  targetOpacity: number;
 }
 
 export default function DotGrid() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const dotsRef = useRef<Dot[]>([]);
-  const trailRef = useRef<TrailDot[]>([]);
+  const cellsRef = useRef<Cell[]>([]);
   const mouseRef = useRef({ x: -1000, y: -1000 });
-  const lastTrailRef = useRef(0);
   const animRef = useRef<number>(0);
+  const cellSize = 32;
+  const gap = 1;
+  const step = cellSize + gap;
 
-  const initDots = useCallback((width: number, height: number) => {
-    const dots: Dot[] = [];
-    const spacing = 12;
-    const cols = Math.ceil(width / spacing) + 1;
-    const rows = Math.ceil(height / spacing) + 1;
-
-    // Create random patch centers
-    const patchCount = 12 + Math.floor(Math.random() * 4);
-    const patches: { cx: number; cy: number; r: number }[] = [];
-    for (let p = 0; p < patchCount; p++) {
-      patches.push({
-        cx: Math.random() * width,
-        cy: Math.random() * height,
-        r: 60 + Math.random() * 140,
-      });
-    }
+  const initCells = useCallback((width: number, height: number) => {
+    const cells: Cell[] = [];
+    const cols = Math.ceil(width / step) + 1;
+    const rows = Math.ceil(height / step) + 1;
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        const baseX = col * spacing;
-        const baseY = row * spacing;
+        const x = col * step;
+        const y = row * step;
 
-        // Find influence from nearest patch
-        let maxInfluence = 0;
-        for (const patch of patches) {
-          const dx = baseX - patch.cx;
-          const dy = baseY - patch.cy;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < patch.r) {
-            const influence = 1 - dist / patch.r;
-            if (influence > maxInfluence) maxInfluence = influence;
-          }
-        }
+        const baseOpacity = 0;
 
-        if (maxInfluence < 0.05) continue;
-
-        const sizeFactor = maxInfluence * maxInfluence;
-        const maxRadius = spacing * 0.45;
-        const radius = maxRadius * sizeFactor;
-
-        if (radius < 0.6) continue;
-
-        dots.push({
-          baseX,
-          baseY,
-          x: baseX,
-          y: baseY,
-          radius,
-          opacity: 0.1 + sizeFactor * 0.4,
-          vx: 0,
-          vy: 0,
+        cells.push({
+          col,
+          row,
+          x,
+          y,
+          inPatch: true,
+          baseOpacity,
+          currentOpacity: baseOpacity,
+          targetOpacity: baseOpacity,
         });
       }
     }
-    dotsRef.current = dots;
-  }, []);
+    // Light up ~50 random cells
+    const indices = Array.from({ length: cells.length }, (_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    for (let i = 0; i < Math.min(50, cells.length); i++) {
+      cells[indices[i]].baseOpacity = 0.08 + Math.random() * 0.15;
+      cells[indices[i]].currentOpacity = cells[indices[i]].baseOpacity;
+      cells[indices[i]].targetOpacity = cells[indices[i]].baseOpacity;
+    }
+
+    cellsRef.current = cells;
+  }, [step]);
+
+  // Deterministic random set for cursor — which cells around cursor light up
+  const cursorCellsRef = useRef<Set<string>>(new Set());
+  const lastCursorCell = useRef("");
+  const lastShuffleRef = useRef(0);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -97,70 +77,115 @@ export default function DotGrid() {
 
     const style = getComputedStyle(document.documentElement);
     const primaryColor = style.getPropertyValue("--primary-500").trim() || "#E8432A";
+
+    // Shuffle cells every 2 seconds — maintain ~50 lit cells total
     const now = Date.now();
+    if (now - lastShuffleRef.current > 2000) {
+      lastShuffleRef.current = now;
+      const cells = cellsRef.current;
+      const maxLit = 50;
 
-    // Draw static dots
-    const dots = dotsRef.current;
-    ctx.fillStyle = primaryColor;
-    for (let i = 0; i < dots.length; i++) {
-      const dot = dots[i];
-      ctx.globalAlpha = dot.opacity;
-      ctx.beginPath();
-      ctx.arc(dot.x, dot.y, dot.radius, 0, Math.PI * 2);
-      ctx.fill();
-    }
+      // Turn off some random lit cells
+      const litCells = cells.filter((c) => c.baseOpacity > 0);
+      const turnOffCount = Math.min(litCells.length, 5 + Math.floor(Math.random() * 5));
+      for (let j = 0; j < turnOffCount; j++) {
+        const idx = Math.floor(Math.random() * litCells.length);
+        litCells[idx].baseOpacity = 0;
+      }
 
-    // Spawn trail dots near mouse
-    const mouse = mouseRef.current;
-    if (mouse.x > 0 && mouse.y > 0 && mouse.x < width && mouse.y < height) {
-      if (now - lastTrailRef.current > 30) {
-        lastTrailRef.current = now;
-        // Spawn a small halftone cluster around cursor
-        const clusterRadius = 35;
-        const gridStep = 10;
-        const steps = Math.ceil(clusterRadius / gridStep);
-
-        for (let gx = -steps; gx <= steps; gx++) {
-          for (let gy = -steps; gy <= steps; gy++) {
-            const dx = gx * gridStep;
-            const dy = gy * gridStep;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist > clusterRadius) continue;
-
-            const influence = 1 - dist / clusterRadius;
-            const r = gridStep * 0.4 * influence * influence;
-            if (r < 0.5) continue;
-
-            trailRef.current.push({
-              x: mouse.x + dx,
-              y: mouse.y + dy,
-              radius: r,
-              born: now,
-              lifetime: 600 + Math.random() * 300,
-            });
-          }
+      // Turn on some random dark cells (only if under max)
+      const currentLit = cells.filter((c) => c.baseOpacity > 0).length;
+      if (currentLit < maxLit) {
+        const darkCells = cells.filter((c) => c.baseOpacity === 0);
+        const turnOnCount = Math.min(darkCells.length, turnOffCount);
+        for (let j = 0; j < turnOnCount; j++) {
+          const idx = Math.floor(Math.random() * darkCells.length);
+          darkCells[idx].baseOpacity = 0.08 + Math.random() * 0.15;
         }
       }
     }
 
-    // Draw and age trail dots
-    const alive: TrailDot[] = [];
-    for (const t of trailRef.current) {
-      const age = now - t.born;
-      if (age >= t.lifetime) continue;
-      alive.push(t);
+    const mouse = mouseRef.current;
+    const cursorRadius = 3; // in cells
+    const mouseCol = Math.round(mouse.x / step);
+    const mouseRow = Math.round(mouse.y / step);
+    const cursorKey = `${mouseCol},${mouseRow}`;
 
-      const fadeOut = 1 - age / t.lifetime;
-      ctx.globalAlpha = fadeOut * 0.45;
-      ctx.beginPath();
-      ctx.arc(t.x, t.y, t.radius * fadeOut, 0, Math.PI * 2);
-      ctx.fill();
+    // When cursor moves to a new cell, pick random cells around it
+    if (cursorKey !== lastCursorCell.current && mouse.x > 0) {
+      lastCursorCell.current = cursorKey;
+      const newSet = new Set<string>();
+      for (let dr = -cursorRadius; dr <= cursorRadius; dr++) {
+        for (let dc = -cursorRadius; dc <= cursorRadius; dc++) {
+          const dist = Math.sqrt(dr * dr + dc * dc);
+          if (dist > cursorRadius) continue;
+          // Random chance to light up, higher near center
+          if (newSet.size < 2 && Math.random() < 0.06) {
+            newSet.add(`${mouseCol + dc},${mouseRow + dr}`);
+          }
+        }
+      }
+      // Merge with existing (so trail persists briefly)
+      newSet.forEach((k) => cursorCellsRef.current.add(k));
+
+      // Clean up old cells that are far from cursor
+      const toRemove: string[] = [];
+      cursorCellsRef.current.forEach((k) => {
+        const [c, r] = k.split(",").map(Number);
+        const d = Math.sqrt((c - mouseCol) ** 2 + (r - mouseRow) ** 2);
+        if (d > cursorRadius * 2.5) toRemove.push(k);
+      });
+      toRemove.forEach((k) => cursorCellsRef.current.delete(k));
     }
-    trailRef.current = alive;
+
+    const cells = cellsRef.current;
+
+    // Draw grid lines (the gaps between cells)
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.07)";
+    ctx.lineWidth = 0.5;
+    ctx.globalAlpha = 1;
+    const cols = Math.ceil(width / step) + 1;
+    const rows = Math.ceil(height / step) + 1;
+    for (let c = 0; c <= cols; c++) {
+      const x = c * step - gap / 2;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+    for (let r = 0; r <= rows; r++) {
+      const y = r * step - gap / 2;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+
+    // Draw lit cells with primary color
+    ctx.fillStyle = primaryColor;
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i];
+      const cellKey = `${cell.col},${cell.row}`;
+      const isCursorLit = cursorCellsRef.current.has(cellKey);
+
+      if (isCursorLit) {
+        cell.targetOpacity = Math.max(cell.baseOpacity, 0.3 + Math.random() * 0.15);
+      } else {
+        cell.targetOpacity = cell.baseOpacity;
+      }
+
+      // Lerp
+      cell.currentOpacity += (cell.targetOpacity - cell.currentOpacity) * 0.1;
+
+      if (cell.currentOpacity < 0.01) continue;
+
+      ctx.globalAlpha = cell.currentOpacity;
+      ctx.fillRect(cell.x, cell.y, cellSize, cellSize);
+    }
 
     ctx.globalAlpha = 1;
     animRef.current = requestAnimationFrame(draw);
-  }, []);
+  }, [step, cellSize]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -172,7 +197,7 @@ export default function DotGrid() {
       const rect = parent.getBoundingClientRect();
       canvas.width = rect.width;
       canvas.height = rect.height;
-      initDots(rect.width, rect.height);
+      initCells(rect.width, rect.height);
     };
 
     resize();
@@ -200,7 +225,7 @@ export default function DotGrid() {
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mouseleave", handleMouseLeave);
     };
-  }, [initDots, draw]);
+  }, [initCells, draw]);
 
   return (
     <canvas
