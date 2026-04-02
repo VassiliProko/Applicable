@@ -10,6 +10,9 @@ import {
   X,
   Check,
   LogOut,
+  Trophy,
+  FolderPlus,
+  Users,
 } from "lucide-react";
 
 interface UserProfile {
@@ -36,6 +39,7 @@ export default function ProfileContent() {
     website: "",
     skills: "",
   });
+  const [stats, setStats] = useState({ projectsCompleted: 0, projectsCreated: 0, companiesWorkedWith: 0 });
 
   useEffect(() => {
     fetch("/api/profile")
@@ -55,6 +59,13 @@ export default function ProfileContent() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    fetch("/api/profile/stats")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && !data.error) setStats(data);
+      })
+      .catch(() => {});
   }, []);
 
   async function handleSave() {
@@ -195,8 +206,39 @@ export default function ProfileContent() {
         </div>
       </div>
 
+      {/* Stats */}
+      <div className="mt-10 grid grid-cols-3 gap-4">
+        <div className="rounded-xl border border-border bg-surface-1 p-5 flex items-center gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <Trophy size={20} className="text-primary" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-text-primary">{stats.projectsCompleted}</p>
+            <p className="type-caption text-text-tertiary">Completed</p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-surface-1 p-5 flex items-center gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent/10">
+            <FolderPlus size={20} className="text-accent" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-text-primary">{stats.projectsCreated}</p>
+            <p className="type-caption text-text-tertiary">Created</p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-surface-1 p-5 flex items-center gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-secondary/10">
+            <Users size={20} className="text-secondary" />
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-text-primary">{stats.companiesWorkedWith}</p>
+            <p className="type-caption text-text-tertiary">Collaborated</p>
+          </div>
+        </div>
+      </div>
+
       {/* Info Section */}
-      <div className="mt-10 grid gap-8 sm:grid-cols-2">
+      <div className="mt-8 grid gap-8 sm:grid-cols-2">
         {/* About */}
         <section className="rounded-xl border border-border bg-surface-1 p-6">
           <h2 className="type-title text-text-primary mb-4">About</h2>

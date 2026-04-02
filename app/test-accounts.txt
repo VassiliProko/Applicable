@@ -1,0 +1,57 @@
+========================================
+  APPLICABLE - TEST ACCOUNTS
+========================================
+
+All accounts use the same password: Password123!
+
+------------ COMPANY ACCOUNTS -----------
+
+1. IBM - Sarah Mitchell
+   Email:    sarah@ibm-hiring.com
+   Password: Password123!
+   Role:     Senior Technical Recruiter
+   Project:  Cloud-Native Microservices Platform
+
+2. Google - James Chen
+   Email:    james@google-projects.com
+   Password: Password123!
+   Role:     Engineering Manager
+   Project:  AI-Powered Search Suggestions Engine
+
+3. Figma - Maya Rodriguez
+   Email:    maya@figma-team.com
+   Password: Password123!
+   Role:     Design Systems Lead
+   Project:  Design System Component Audit Tool
+
+4. Amazon - David Park
+   Email:    david@amazon-labs.com
+   Password: Password123!
+   Role:     Principal Engineer
+   Project:  Serverless E-Commerce Analytics Pipeline
+
+5. Spotify - Lisa Thompson
+   Email:    lisa@spotify-eng.com
+   Password: Password123!
+   Role:     Staff Engineer
+   Project:  Playlist Generation Algorithm
+
+6. Meta - Alex Kim
+   Email:    alex@meta-vr.com
+   Password: Password123!
+   Role:     VR Product Manager
+   Project:  Social VR Experience Concept
+
+7. Adobe - Rachel Foster
+   Email:    rachel@adobe-creative.com
+   Password: Password123!
+   Role:     Creative Director
+   Project:  AI Image Enhancement Plugin
+
+8. Tesla - Tom Bradley
+   Email:    tom@tesla-autopilot.com
+   Password: Password123!
+   Role:     Autonomy Software Lead
+   Project:  Object Detection Dashboard
+
+========================================

@@ -13,7 +13,9 @@
       "Bash(mv \"Thumbnail -  Design-1.png\" \"design-1.png\")",
       "Bash(mv \"Thumbnail -  Dev.png\" \"dev.png\")",
       "Bash(mv \"Thumbnail -  Mobile.png\" \"mobile.png\")",
-      "Bash(mv \"Thumbnail - Marketing.png\" \"marketing.png\")"
+      "Bash(mv \"Thumbnail - Marketing.png\" \"marketing.png\")",
+      "Bash(node -e ':*)",
+      "Bash(node seed-companies.mjs)"
     ],
     "additionalDirectories": [
       "k:\\Downloads\\Applicable biuld\\Applicable\\app\\app\\api",
