@@ -1,29 +1,28 @@
-import Image from "next/image";
 import { ArrowDown } from "lucide-react";
 import DotGrid from "./DotGrid";
 
 export default function Hero() {
   return (
-    <section className="blueprint-frame flex flex-col items-center justify-center px-9 pt-18 pb-18 text-center relative overflow-hidden">
+    <section className="flex flex-col items-start px-9 pt-18 pb-18 relative overflow-hidden">
       <DotGrid />
-      <h1 className="type-display max-w-3xl relative z-10">
-        Where skills take{" "}
-        <span className="italic text-primary">flight</span>
-      </h1>
-      <p className="type-body mt-6 max-w-xl text-text-secondary relative z-10">
-        Prove your abilities through real-world projects. No degree required.
-        Build a verified track record that speaks for itself.
-      </p>
-      <Image
-        src="/images/landing_image.jpg"
-        alt="Landing hero"
-        width={600}
-        height={400}
-        className="mt-10 w-full max-w-3xl rounded-lg object-cover relative z-10"
-        priority
-      />
-      <div className="mt-8 rounded-[19px] bg-surface-1 p-2 relative z-10">
-        <div className="flex items-stretch gap-1.5">
+      <div className="mx-auto w-full max-w-[1280px]">
+        <h1 className="type-display max-w-3xl relative z-10">
+          Where skills take{" "}
+          <span className="italic bg-gradient-to-r from-[#F0A030] via-[#E87A1A] to-[#D45A0C] bg-clip-text text-transparent inline-block pr-1 pb-1">flight</span>
+        </h1>
+        <p className="type-body mt-3 max-w-xl text-text-secondary relative z-10 text-lg leading-7">
+          Prove your abilities through real-world projects. No degree required.
+          Build a verified track record that speaks for itself.
+        </p>
+        {/* <Image
+          src="/images/landing_image.jpg"
+          alt="Landing hero"
+          width={600}
+          height={400}
+          className="mt-10 w-full max-w-3xl rounded-lg object-cover relative z-10"
+          priority
+        /> */}
+        <div className="mt-8 flex items-stretch gap-3 relative z-10">
           <div className="btn-spin-wrapper">
             <a
               href="#projects"
@@ -43,6 +42,11 @@ export default function Hero() {
           </a>
         </div>
       </div>
+      {/* Bottom fade: grid effect dissolves into background */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-32 z-[1] pointer-events-none"
+        style={{ background: "linear-gradient(to bottom, transparent, var(--background))" }}
+      />
     </section>
   );
 }

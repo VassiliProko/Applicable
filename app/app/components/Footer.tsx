@@ -2,7 +2,7 @@ import Image from "next/image";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[var(--blueprint-line)] bg-surface-1">
+    <footer className="border-t border-border bg-surface-1">
       <div className="px-9 pt-40 pb-16">
         <div className="flex flex-col gap-6">
           <Image
@@ -35,7 +35,7 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="border-t border-[var(--blueprint-line)] px-9 py-4">
+      <div className="border-t border-border px-9 py-4">
         <span className="text-sm text-text-tertiary">
           &copy; {new Date().getFullYear()} Applicable
         </span>

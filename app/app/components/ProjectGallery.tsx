@@ -103,7 +103,7 @@ export default function ProjectGallery() {
   }, []);
 
   return (
-    <section id="projects" className="blueprint-frame px-9 py-18 scroll-mt-6">
+    <section id="projects" className="px-9 py-18 scroll-mt-6">
       <div className="mx-auto max-w-[1280px]">
         <h2 className="type-headline">Discover Projects</h2>
         <p className="type-body mt-2 max-w-lg text-text-secondary">

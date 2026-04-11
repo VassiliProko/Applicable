@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/vassi/Documents/Projects/Operation SOAR/Applicable_Soar/**)",
+      "Read(//Users/vassi/Documents/Projects/Operation SOAR/**)"
+    ]
+  }
+}

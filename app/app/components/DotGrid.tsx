@@ -161,6 +161,11 @@ export default function DotGrid() {
       ctx.stroke();
     }
 
+    // Content zone fade: reduce opacity for cells near the left where text sits.
+    // Fade zone covers roughly the left 45% and top 70% of the canvas.
+    const fadeRight = width * 0.45;
+    const fadeBottom = height * 0.75;
+
     // Draw lit cells with primary color
     ctx.fillStyle = primaryColor;
     for (let i = 0; i < cells.length; i++) {
@@ -179,7 +184,15 @@ export default function DotGrid() {
 
       if (cell.currentOpacity < 0.01) continue;
 
-      ctx.globalAlpha = cell.currentOpacity;
+      // Dampen opacity in the content zone so squares don't compete with text
+      let dampen = 1;
+      if (cell.x < fadeRight && cell.y < fadeBottom) {
+        const xFactor = 1 - cell.x / fadeRight;   // 1 at left edge, 0 at fadeRight
+        const yFactor = 1 - cell.y / fadeBottom;   // 1 at top, 0 at fadeBottom
+        dampen = 1 - xFactor * yFactor * 0.85;     // up to 85% reduction in top-left
+      }
+
+      ctx.globalAlpha = cell.currentOpacity * dampen;
       ctx.fillRect(cell.x, cell.y, cellSize, cellSize);
     }
 
