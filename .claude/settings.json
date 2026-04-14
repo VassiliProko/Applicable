@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Read(//Users/vassi/Documents/Projects/Operation SOAR/Applicable_Soar/**)",
-      "Read(//Users/vassi/Documents/Projects/Operation SOAR/**)"
+      "Read(//Users/vassi/Documents/Projects/Operation SOAR/**)",
+      "Read(//Users/vassi/Documents/Projects/Operation\\\\ SOAR/Applicable/app/app/components/**)",
+      "Bash(lsof -ti:3000)"
     ]
   }
 }

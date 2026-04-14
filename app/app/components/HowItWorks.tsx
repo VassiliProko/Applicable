@@ -23,15 +23,18 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section className="px-9 py-18">
+    <section
+      className="px-9 pt-18 pb-[max(2.25rem,calc((100%-1280px)/2))] mt-12 bg-cover bg-center rounded-2xl mx-4 md:mx-8"
+      style={{ backgroundImage: "url('/images/background_image.webp')" }}
+    >
       <div className="mx-auto max-w-[1280px]">
-        <h2 className="type-headline">How It Works</h2>
+        <h2 className="type-headline text-white">How It Works</h2>
 
         {/* Desktop */}
-        <div className="mt-14 hidden md:flex items-stretch">
+        <div className="mt-8 hidden md:flex items-stretch">
           {steps.map((step, i) => (
             <div key={i} className="contents">
-              <div className="flex-1 flex flex-col items-start text-left px-6 py-5 border border-border rounded-lg">
+              <div className="flex-1 flex flex-col items-start text-left px-6 py-5 border border-border rounded-lg bg-background">
                 <step.icon size={40} className="text-primary mb-5" />
                 <h3 className="type-subhead font-semibold text-[21px] mb-2">
                   {step.title}
@@ -50,10 +53,10 @@ export default function HowItWorks() {
         </div>
 
         {/* Mobile */}
-        <div className="mt-12 flex flex-col gap-2 md:hidden">
+        <div className="mt-8 flex flex-col gap-2 md:hidden">
           {steps.map((step, i) => (
             <div key={i} className="contents">
-              <div className="flex flex-col items-start text-left px-5 py-4 border border-border rounded-lg">
+              <div className="flex flex-col items-start text-left px-5 py-4 border border-border rounded-lg bg-background">
                 <step.icon size={36} className="text-primary mb-4" />
                 <h3 className="type-subhead font-semibold text-[20px] mb-2">
                   {step.title}

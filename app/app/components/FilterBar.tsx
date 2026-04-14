@@ -75,15 +75,17 @@ function FilterDropdown({ label, sections, selected, onToggle }: DropdownProps) 
                   <button
                     key={option.value}
                     onClick={() => onToggle(option.value)}
-                    className={`flex w-full cursor-pointer items-center gap-3 rounded-[8px] px-3.5 py-2.5 text-left text-[14px] transition-all duration-200 hover:bg-surface-2 ${
-                      isSelected ? "text-text-primary" : "text-text-secondary"
+                    className={`flex w-full cursor-pointer items-center gap-3 rounded-[8px] px-3.5 py-2.5 text-left text-[14px] transition-all duration-200 ${
+                      isSelected
+                        ? "bg-accent/10 text-text-primary"
+                        : "text-text-secondary hover:bg-surface-2"
                     }`}
                   >
                     <span
-                      className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] border transition-all duration-200 ${
+                      className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] border-[1.5px] transition-all duration-200 ${
                         isSelected
                           ? "border-accent bg-accent"
-                          : "border-[rgba(255,255,255,0.12)]"
+                          : "border-border"
                       }`}
                     >
                       {isSelected && <Check size={11} className="text-white" />}
@@ -133,6 +135,7 @@ export default function FilterBar({
   activeCount,
 }: FilterBarProps) {
   const [visible, setVisible] = useState(true);
+  const [hasBeenHidden, setHasBeenHidden] = useState(false);
   const lastScrollY = useRef(0);
   const isSticky = useRef(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -160,7 +163,9 @@ export default function FilterBar({
     const onScroll = () => {
       const y = window.scrollY;
       if (isSticky.current) {
-        setVisible(y < lastScrollY.current);
+        const nowVisible = y < lastScrollY.current;
+        if (!nowVisible) setHasBeenHidden(true);
+        setVisible(nowVisible);
       }
       lastScrollY.current = y;
     };
@@ -175,7 +180,9 @@ export default function FilterBar({
       <div ref={sentinelRef} className="mt-8 h-0 w-0" aria-hidden />
       <div className="sticky top-[84px] z-40">
         <div
-          className={`rounded-[14px] border border-border bg-surface-1 px-2 py-2 transition-all duration-200 ${
+          className={`rounded-[14px] border border-border bg-surface-1 px-2 py-2 ${
+            hasBeenHidden ? "transition-all duration-200" : ""
+          } ${
             visible
               ? "translate-y-0 opacity-100"
               : "-translate-y-full opacity-0 pointer-events-none"

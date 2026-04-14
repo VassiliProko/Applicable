@@ -1,8 +1,10 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Project } from "@/app/lib/types";
-import { X, Clock, Signal, Check, CheckCircle } from "lucide-react";
+import { X, Clock, Signal, Check, CheckCircle, LogIn } from "lucide-react";
 
 const categoryThumbnails: Record<string, string> = {
   "Design": "/Thumbnails/design.png",
@@ -27,6 +29,8 @@ export default function ProjectModal({
   onClose: () => void;
   showApply?: boolean;
 }) {
+  const { status } = useSession();
+  const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -136,7 +140,7 @@ export default function ProjectModal({
               {project.title}
             </h2>
 
-            <div className="mt-4 aspect-video max-w-md overflow-hidden rounded-[10px] bg-black">
+            <div className="mt-4 aspect-video w-full overflow-hidden rounded-[10px] bg-black">
               <img
                 src={getThumbnail(project)}
                 alt={project.title}
@@ -216,7 +220,28 @@ export default function ProjectModal({
           {/* Right: application form */}
           {showApply && (
             <div className="border-t border-border bg-surface-2/50 p-9 lg:w-[40%] lg:border-l lg:border-t-0 overflow-y-auto">
-              {submitted ? (
+              {status !== "authenticated" ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <LogIn size={48} className="text-text-tertiary" />
+                  <h3 className="type-title mt-4">Sign in to Apply</h3>
+                  <p className="type-body mt-2 text-text-secondary">
+                    You need an account to submit an application. Sign in or
+                    create one to get started.
+                  </p>
+                  <button
+                    onClick={() => router.push("/login")}
+                    className="mt-6 h-12 w-full rounded-[6px] bg-primary text-base font-medium text-white transition-all duration-100 hover:bg-primary-hover active:bg-primary-active active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => router.push("/register")}
+                    className="mt-3 h-12 w-full rounded-[6px] bg-surface-2 text-base font-medium text-text-primary transition-all duration-100 hover:bg-surface-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  >
+                    Create Account
+                  </button>
+                </div>
+              ) : submitted ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <CheckCircle size={48} className="text-success" />
                   <h3 className="type-title mt-4">Application Sent</h3>

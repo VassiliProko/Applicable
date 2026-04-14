@@ -62,7 +62,8 @@ export default function DotGrid() {
   }, [step]);
 
   // Deterministic random set for cursor — which cells around cursor light up
-  const cursorCellsRef = useRef<Set<string>>(new Set());
+  // Map from cell key to assigned opacity (stable per cell to avoid flicker)
+  const cursorCellsRef = useRef<Map<string, number>>(new Map());
   const lastCursorCell = useRef("");
   const lastShuffleRef = useRef(0);
 
@@ -114,23 +115,21 @@ export default function DotGrid() {
     // When cursor moves to a new cell, pick random cells around it
     if (cursorKey !== lastCursorCell.current && mouse.x > 0) {
       lastCursorCell.current = cursorKey;
-      const newSet = new Set<string>();
       for (let dr = -cursorRadius; dr <= cursorRadius; dr++) {
         for (let dc = -cursorRadius; dc <= cursorRadius; dc++) {
           const dist = Math.sqrt(dr * dr + dc * dc);
           if (dist > cursorRadius) continue;
-          // Random chance to light up, higher near center
-          if (newSet.size < 2 && Math.random() < 0.06) {
-            newSet.add(`${mouseCol + dc},${mouseRow + dr}`);
+          const key = `${mouseCol + dc},${mouseRow + dr}`;
+          // Only assign opacity once per cell (stable value avoids flicker)
+          if (!cursorCellsRef.current.has(key) && Math.random() < 0.06) {
+            cursorCellsRef.current.set(key, 0.3 + Math.random() * 0.15);
           }
         }
       }
-      // Merge with existing (so trail persists briefly)
-      newSet.forEach((k) => cursorCellsRef.current.add(k));
 
       // Clean up old cells that are far from cursor
       const toRemove: string[] = [];
-      cursorCellsRef.current.forEach((k) => {
+      cursorCellsRef.current.forEach((_, k) => {
         const [c, r] = k.split(",").map(Number);
         const d = Math.sqrt((c - mouseCol) ** 2 + (r - mouseRow) ** 2);
         if (d > cursorRadius * 2.5) toRemove.push(k);
@@ -171,10 +170,10 @@ export default function DotGrid() {
     for (let i = 0; i < cells.length; i++) {
       const cell = cells[i];
       const cellKey = `${cell.col},${cell.row}`;
-      const isCursorLit = cursorCellsRef.current.has(cellKey);
+      const cursorOpacity = cursorCellsRef.current.get(cellKey);
 
-      if (isCursorLit) {
-        cell.targetOpacity = Math.max(cell.baseOpacity, 0.3 + Math.random() * 0.15);
+      if (cursorOpacity !== undefined) {
+        cell.targetOpacity = Math.max(cell.baseOpacity, cursorOpacity);
       } else {
         cell.targetOpacity = cell.baseOpacity;
       }
