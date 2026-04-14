@@ -6,9 +6,11 @@ type Theme = "dark" | "light";
 
 const ThemeContext = createContext<{
   theme: Theme;
+  mounted: boolean;
   toggleTheme: () => void;
 }>({
   theme: "dark",
+  mounted: false,
   toggleTheme: () => {},
 });
 
@@ -21,17 +23,16 @@ export default function ThemeProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("theme") as Theme | null;
-      return stored === "light" || stored === "dark" ? stored : "dark";
-    }
-    return "dark";
-  });
+  const [theme, setTheme] = useState<Theme>("dark");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
+    const stored = localStorage.getItem("theme") as Theme | null;
+    const resolved = stored === "light" || stored === "dark" ? stored : "dark";
+    setTheme(resolved);
+    document.documentElement.setAttribute("data-theme", resolved);
+    setMounted(true);
+  }, []);
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
@@ -41,7 +42,7 @@ export default function ThemeProvider({
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, mounted, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

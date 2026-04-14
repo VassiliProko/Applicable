@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Source_Sans_3 } from "next/font/google";
-import Script from "next/script";
 import ThemeProvider from "@/app/components/ThemeProvider";
 import Providers from "@/app/components/Providers";
 import "./globals.css";
@@ -37,7 +36,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-body">
-        <Script id="theme-init" src="/theme-init.js" strategy="beforeInteractive" />
         <Providers>
           <ThemeProvider>{children}</ThemeProvider>
         </Providers>
