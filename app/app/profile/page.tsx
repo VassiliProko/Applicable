@@ -1,7 +1,6 @@
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
-import ProfileContent from "@/app/components/ProfileContent";
-import ProfileProjects from "@/app/components/ProfileProjects";
+import ProfileTabs from "@/app/components/ProfileTabs";
 
 export default function ProfilePage() {
   return (
@@ -9,12 +8,7 @@ export default function ProfilePage() {
       <Navbar />
 
       <main className="flex-1">
-        <ProfileContent />
-
-        <div className="mx-auto max-w-7xl px-6">
-          {/* Projects */}
-          <ProfileProjects />
-        </div>
+        <ProfileTabs />
       </main>
 
       <Footer />
