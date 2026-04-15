@@ -201,6 +201,54 @@ body {
   animation-play-state: paused;
 }
 
+/* ── Glow ── */
+
+.animate-glow {
+  filter: drop-shadow(0 0 12px rgba(232, 67, 42, 0.4)) drop-shadow(0 0 40px rgba(232, 67, 42, 0.2));
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 12px rgba(232, 67, 42, 0.4)) drop-shadow(0 0 40px rgba(232, 67, 42, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(232, 67, 42, 0.6)) drop-shadow(0 0 60px rgba(232, 67, 42, 0.3));
+  }
+}
+
+/* ── Float / Hover ── */
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+/* ── Fade In ── */
+
+.animate-fade-in {
+  animation: fade-in 0.4s var(--ease-base) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* ── Card Entrance ── */
 
 .card-enter {

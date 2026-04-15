@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import StaticGrid from "@/app/components/StaticGrid";
+import { useTheme } from "@/app/components/ThemeProvider";
 import {
   ArrowLeft,
   ArrowRight,
@@ -40,8 +42,10 @@ const steps = ["Basics", "Details", "Milestones", "Application", "Review"];
 
 export default function CreateProjectPage() {
   const router = useRouter();
+  const { theme } = useTheme();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
 
   // Step 1: Basics
   const [title, setTitle] = useState("");
@@ -155,7 +159,8 @@ export default function CreateProjectPage() {
     });
 
     if (res.ok) {
-      router.push("/#projects");
+      const data = await res.json();
+      setCreatedProjectId(data.id);
     }
     setSubmitting(false);
   }
@@ -164,9 +169,66 @@ export default function CreateProjectPage() {
     "w-full rounded-lg border border-border bg-surface-2 px-4 py-3 text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none";
   const labelClass = "type-caption font-medium text-text-secondary mb-1 block";
 
+  const isLight = theme === "light";
+  const stepImages = isLight
+    ? [
+        "/Loading screen/Step 1_light.png",
+        "/Loading screen/Step 2_light.png",
+        "/Loading screen/Step 3_light.png",
+        "/Loading screen/Step 4_light.png",
+        "/Loading screen/Step 5_light.png",
+      ]
+    : [
+        "/Loading screen/Step 1.png",
+        "/Loading screen/Step 2.png",
+        "/Loading screen/Step 3.png",
+        "/Loading screen/Step 4.png",
+        "/Loading screen/Completed icon.png",
+      ];
+
+  if (createdProjectId) {
+    return (
+      <main className="flex-1 flex items-center justify-center px-6 relative overflow-hidden">
+        <StaticGrid />
+        <div
+          className="absolute bottom-0 left-0 right-0 h-[50%] z-1 pointer-events-none"
+          style={{ background: "linear-gradient(to top, var(--background), transparent)" }}
+        />
+        <div className="relative z-10 flex flex-col items-center text-center animate-fade-in">
+          <img
+            src={isLight ? "/Loading screen/Step 5_light.png" : "/Loading screen/Completed icon.png"}
+            alt="Project created"
+            className="w-48 h-48 object-contain mb-8 animate-float animate-glow"
+          />
+          <h1 className="type-display text-text-primary">Project Published!</h1>
+          <p className="type-body text-text-secondary mt-3 max-w-md">
+            Your project is live and ready for applicants. Share it with the world or head to your dashboard to manage it.
+          </p>
+          <div className="flex gap-3 mt-8">
+            <button
+              onClick={() => router.push(`/manage-project/${createdProjectId}`)}
+              className="inline-flex h-12 items-center gap-2 rounded-lg bg-primary px-6 text-base font-medium text-white transition-colors hover:bg-primary-hover active:scale-[0.98]"
+            >
+              Go to Dashboard
+              <ArrowRight size={18} />
+            </button>
+            <button
+              onClick={() => router.push("/#projects")}
+              className="inline-flex h-12 items-center gap-2 rounded-lg border border-border bg-surface-2 px-6 text-base font-medium text-text-primary transition-colors hover:bg-surface-3 active:scale-[0.98]"
+            >
+              Browse Projects
+            </button>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
       <main className="flex-1">
-        <div className="mx-auto max-w-2xl px-6 py-10">
+        <div className="mx-auto max-w-7xl px-6 py-10 flex gap-32">
+          {/* Left: Form */}
+          <div className="flex-1 min-w-0">
           {/* Header */}
           <button
             onClick={() => router.back()}
@@ -650,6 +712,39 @@ export default function CreateProjectPage() {
                 {submitting ? "Publishing..." : "Publish Project"}
               </button>
             )}
+          </div>
+          </div>
+
+          {/* Divider */}
+          <div className="hidden lg:block w-px shrink-0 bg-border self-stretch" />
+
+          {/* Right: Step Image + Encouragement */}
+          <div className="hidden lg:flex w-[380px] shrink-0 sticky top-28 self-start flex-col items-center justify-center p-8 h-[calc(100vh-10rem)]">
+            <img
+              key={step}
+              src={stepImages[step]}
+              alt={`Step ${step + 1}`}
+              className="max-w-full object-contain animate-fade-in transition-all duration-500"
+              style={{ maxHeight: `${30 + step * 10}%` }}
+            />
+            <p key={`phrase-${step}`} className="mt-6 text-center type-subhead text-text-secondary animate-fade-in">
+              {[
+                "Every great opportunity starts with a single idea.",
+                "The details you add will help the right people find your project.",
+                "Clear milestones turn ambition into action.",
+                "Great questions attract great applicants.",
+                "You're about to create a real opportunity for someone. Hit publish!",
+              ][step]}
+            </p>
+            <p key={`sub-${step}`} className="mt-2 text-center type-caption text-text-tertiary animate-fade-in">
+              {[
+                "You're laying the foundation for someone's next breakthrough.",
+                "Every skill tag and description brings you closer to the perfect match.",
+                "You're building a roadmap that will guide someone to success.",
+                "The right questions reveal the most passionate candidates.",
+                "Someone out there is waiting for exactly this project.",
+              ][step]}
+            </p>
           </div>
         </div>
       </main>
