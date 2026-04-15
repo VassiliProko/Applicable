@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Navbar from "@/app/components/Navbar";
 import {
   ArrowLeft,
   ArrowRight,
@@ -166,8 +165,6 @@ export default function CreateProjectPage() {
   const labelClass = "type-caption font-medium text-text-secondary mb-1 block";
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
       <main className="flex-1">
         <div className="mx-auto max-w-2xl px-6 py-10">
           {/* Header */}
@@ -656,6 +653,5 @@ export default function CreateProjectPage() {
           </div>
         </div>
       </main>
-    </div>
   );
 }

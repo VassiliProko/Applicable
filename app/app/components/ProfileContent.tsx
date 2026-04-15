@@ -207,32 +207,35 @@ export default function ProfileContent() {
       </div>
 
       {/* Stats */}
-      <div className="mt-10 grid grid-cols-3 gap-4">
-        <div className="rounded-xl border border-border bg-surface-1 p-5 flex items-center gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <Trophy size={20} className="text-primary" />
+      <div className="mt-10 grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="rounded-xl border border-border bg-surface-1 p-3 sm:p-5 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-4 text-center sm:text-left">
+          <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <Trophy size={18} className="text-primary sm:hidden" />
+            <Trophy size={20} className="text-primary hidden sm:block" />
           </div>
-          <div>
-            <p className="text-2xl font-bold text-text-primary">{stats.projectsCompleted}</p>
-            <p className="type-caption text-text-tertiary">Completed</p>
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-surface-1 p-5 flex items-center gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-accent/10">
-            <FolderPlus size={20} className="text-accent" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-text-primary">{stats.projectsCreated}</p>
-            <p className="type-caption text-text-tertiary">Created</p>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-bold text-text-primary">{stats.projectsCompleted}</p>
+            <p className="type-caption text-text-tertiary truncate">Completed</p>
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-surface-1 p-5 flex items-center gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-secondary/10">
-            <Users size={20} className="text-secondary" />
+        <div className="rounded-xl border border-border bg-surface-1 p-3 sm:p-5 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-4 text-center sm:text-left">
+          <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-accent/10">
+            <FolderPlus size={18} className="text-accent sm:hidden" />
+            <FolderPlus size={20} className="text-accent hidden sm:block" />
           </div>
-          <div>
-            <p className="text-2xl font-bold text-text-primary">{stats.companiesWorkedWith}</p>
-            <p className="type-caption text-text-tertiary">Collaborated</p>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-bold text-text-primary">{stats.projectsCreated}</p>
+            <p className="type-caption text-text-tertiary truncate">Created</p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-surface-1 p-3 sm:p-5 flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-4 text-center sm:text-left">
+          <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg bg-secondary/10">
+            <Users size={18} className="text-secondary sm:hidden" />
+            <Users size={20} className="text-secondary hidden sm:block" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg sm:text-2xl font-bold text-text-primary">{stats.companiesWorkedWith}</p>
+            <p className="type-caption text-text-tertiary truncate">Collaborated</p>
           </div>
         </div>
       </div>

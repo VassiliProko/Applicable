@@ -104,3 +104,48 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ id, message: "Project created" }, { status: 201 });
 }
+
+// DELETE: delete a project and all related data (requires auth, must be creator)
+export async function DELETE(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const projectId = searchParams.get("id");
+
+  if (!projectId) {
+    return NextResponse.json({ error: "Project ID is required" }, { status: 400 });
+  }
+
+  // Verify the user is the creator
+  const { data: project } = await supabase
+    .from("projects")
+    .select("creator_id")
+    .eq("id", projectId)
+    .single();
+
+  if (!project) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+
+  if (project.creator_id !== session.user.id) {
+    return NextResponse.json({ error: "You can only delete your own projects" }, { status: 403 });
+  }
+
+  // Delete all related data
+  await supabase.from("case_studies").delete().eq("project_id", projectId);
+  await supabase.from("project_submissions").delete().eq("project_id", projectId);
+  await supabase.from("milestone_reports").delete().eq("project_id", projectId);
+  await supabase.from("applications").delete().eq("project_id", projectId);
+
+  // Delete the project itself
+  const { error } = await supabase.from("projects").delete().eq("id", projectId);
+
+  if (error) {
+    return NextResponse.json({ error: "Failed to delete project" }, { status: 500 });
+  }
+
+  return NextResponse.json({ message: "Project deleted" });
+}

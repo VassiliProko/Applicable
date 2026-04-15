@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import Navbar from "@/app/components/Navbar";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -18,6 +17,7 @@ import {
   Image as ImageIcon,
   MessageSquare,
   Send,
+  Trash2,
 } from "lucide-react";
 
 interface Applicant {
@@ -109,6 +109,21 @@ export default function ManageProjectPage() {
   const [submissionFeedback, setSubmissionFeedback] = useState<Record<string, string>>({});
   const [reviewingSubmission, setReviewingSubmission] = useState<string | null>(null);
   const [expandedSubmission, setExpandedSubmission] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const router = useRouter();
+
+  async function handleDeleteProject() {
+    if (!project) return;
+    setDeleting(true);
+    const res = await fetch(`/api/projects?id=${project.id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/profile");
+    } else {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  }
 
   useEffect(() => {
     // Fetch project details
@@ -239,30 +254,22 @@ export default function ManageProjectPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <div className="flex flex-1 items-center justify-center">
-          <p className="type-body text-text-tertiary">Loading...</p>
-        </div>
+      <div className="flex flex-1 items-center justify-center">
+        <p className="type-body text-text-tertiary">Loading...</p>
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <div className="flex flex-1 flex-col items-center justify-center gap-4">
-          <p className="type-body text-text-tertiary">Project not found or you don&apos;t have access.</p>
-          <Link href="/profile" className="text-sm text-accent hover:underline">Back to Profile</Link>
-        </div>
+      <div className="flex flex-1 flex-col items-center justify-center gap-4">
+        <p className="type-body text-text-tertiary">Project not found or you don&apos;t have access.</p>
+        <Link href="/profile" className="text-sm text-accent hover:underline">Back to Profile</Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
       <main className="flex-1 pb-16">
         {/* Header */}
         <div className="border-b border-[var(--border-base)]">
@@ -283,10 +290,17 @@ export default function ManageProjectPage() {
                   <span className="text-lg font-bold text-black">{project.companyName.charAt(0)}</span>
                 )}
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <h1 className="type-headline text-text-primary">{project.title}</h1>
                 <p className="type-body text-text-secondary">{project.companyName}</p>
               </div>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="shrink-0 flex items-center gap-1.5 rounded-lg border border-error/30 px-3 py-2 text-sm font-medium text-error transition-colors hover:bg-error/10"
+              >
+                <Trash2 size={14} />
+                <span className="hidden sm:inline">Delete</span>
+              </button>
             </div>
 
             <div className="mt-3 flex items-center gap-3">
@@ -895,7 +909,47 @@ export default function ManageProjectPage() {
             </div>
           </div>
         )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => !deleting && setShowDeleteConfirm(false)}
+          >
+            <div
+              className="relative w-[90vw] max-w-md rounded-2xl bg-surface-1 p-8"
+              style={{ boxShadow: "var(--shadow-high)" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex flex-col items-center text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-error/10 mb-4">
+                  <Trash2 size={24} className="text-error" />
+                </div>
+                <h3 className="type-title text-text-primary">Delete Project</h3>
+                <p className="type-body text-text-secondary mt-2">
+                  Are you sure you want to delete <strong>{project.title}</strong>? This will permanently remove the project and all associated applications, reports, submissions, and case studies.
+                </p>
+                <p className="type-caption text-error mt-2">This action cannot be undone.</p>
+                <div className="flex gap-3 mt-6 w-full">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deleting}
+                    className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-2 transition-colors disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteProject}
+                    disabled={deleting}
+                    className="flex-1 rounded-lg bg-error px-4 py-2.5 text-sm font-medium text-white hover:bg-error/80 transition-colors disabled:opacity-50"
+                  >
+                    {deleting ? "Deleting..." : "Delete Project"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
-    </div>
   );
 }

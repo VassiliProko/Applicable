@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Project } from "@/app/lib/types";
-import { Clock, FileText, ArrowUpDown, Settings } from "lucide-react";
+import { Clock, FileText, ArrowUpDown, Trash2 } from "lucide-react";
 
 const categoryThumbnails: Record<string, string> = {
   "Design": "/Thumbnails/design.png",
@@ -62,6 +62,8 @@ export default function ProfileProjects() {
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [caseStudies, setCaseStudies] = useState<CaseStudy[]>([]);
   const [appliedSort, setAppliedSort] = useState<"status" | "name" | "company" | "difficulty">("status");
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Real data
   const [allProjects, setAllProjects] = useState<Project[]>([]);
@@ -187,6 +189,17 @@ export default function ProfileProjects() {
     } else {
       setSelectedProject(project);
     }
+  }
+
+  async function handleDeleteProject(project: Project) {
+    setDeleting(true);
+    const res = await fetch(`/api/projects?id=${project.id}`, { method: "DELETE" });
+    if (res.ok) {
+      setCreatedProjects((prev) => prev.filter((p) => p.id !== project.id));
+      setAllProjects((prev) => prev.filter((p) => p.id !== project.id));
+    }
+    setDeleting(false);
+    setDeleteTarget(null);
   }
 
   function getTabCount(tab: Tab): number {
@@ -360,7 +373,13 @@ export default function ProfileProjects() {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="type-caption rounded-full bg-accent/10 px-2.5 py-0.5 font-medium text-accent">Creator</span>
-                    <Settings size={14} className="text-text-tertiary" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(project); }}
+                      className="flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary hover:bg-error/10 hover:text-error transition-colors"
+                      aria-label="Delete project"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                   <FitTitle className="type-title">{project.title}</FitTitle>
                   <p className="type-body mt-2 line-clamp-2 text-text-secondary">{project.tagline}</p>
@@ -451,6 +470,47 @@ export default function ProfileProjects() {
         onClose={() => setSelectedProject(null)}
         showApply={activeTab !== "Applied"}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => !deleting && setDeleteTarget(null)}
+        >
+          <div
+            className="relative w-[90vw] max-w-md rounded-2xl bg-surface-1 p-8"
+            style={{ boxShadow: "var(--shadow-high)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-error/10 mb-4">
+                <Trash2 size={24} className="text-error" />
+              </div>
+              <h3 className="type-title text-text-primary">Delete Project</h3>
+              <p className="type-body text-text-secondary mt-2">
+                Are you sure you want to delete <strong>{deleteTarget.title}</strong>? This will permanently remove the project and all associated data.
+              </p>
+              <p className="type-caption text-error mt-2">This action cannot be undone.</p>
+              <div className="flex gap-3 mt-6 w-full">
+                <button
+                  onClick={() => setDeleteTarget(null)}
+                  disabled={deleting}
+                  className="flex-1 rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-2 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteProject(deleteTarget)}
+                  disabled={deleting}
+                  className="flex-1 rounded-lg bg-error px-4 py-2.5 text-sm font-medium text-white hover:bg-error/80 transition-colors disabled:opacity-50"
+                >
+                  {deleting ? "Deleting..." : "Delete Project"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

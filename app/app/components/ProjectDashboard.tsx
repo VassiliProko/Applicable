@@ -850,7 +850,7 @@ export default function ProjectDashboard({ project }: { project: Project }) {
     <main className="flex-1 pb-16">
       {/* Header */}
       <div className="border-b border-[var(--border-base)]">
-        <div className="mx-auto max-w-7xl px-6 py-6">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6">
           <Link
             href="/profile"
             className="inline-flex items-center gap-1.5 text-sm text-text-tertiary hover:text-text-primary transition-colors mb-4"
@@ -859,9 +859,9 @@ export default function ProjectDashboard({ project }: { project: Project }) {
             Back to Profile
           </Link>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             {/* Company logo */}
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white">
+            <div className="flex h-10 w-10 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-xl bg-white">
               {project.logoUrl ? (
                 <img
                   src={project.logoUrl}
@@ -875,8 +875,8 @@ export default function ProjectDashboard({ project }: { project: Project }) {
               )}
             </div>
 
-            <div>
-              <h1 className="type-headline text-text-primary">
+            <div className="min-w-0">
+              <h1 className="type-headline text-text-primary text-xl sm:text-[32px] sm:leading-[40px]">
                 {project.title}
               </h1>
               <p className="type-body text-text-secondary mt-1">
@@ -944,7 +944,7 @@ export default function ProjectDashboard({ project }: { project: Project }) {
       </div>
 
       {/* Sidebar Tabs + Content */}
-      <div className="mx-auto max-w-7xl px-6 mt-8 flex gap-0">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 mt-8 flex flex-col md:flex-row gap-0">
         {/* Sidebar Tabs */}
         <nav className="hidden md:flex flex-col gap-1 p-1 w-48 shrink-0 self-start sticky top-24 mr-8 pr-8 border-r border-[var(--border-base)] min-h-[calc(100vh-200px)]">
           {tabs.map((tab) => (
@@ -963,12 +963,12 @@ export default function ProjectDashboard({ project }: { project: Project }) {
         </nav>
 
         {/* Mobile Tabs (horizontal) */}
-        <div className="md:hidden flex gap-1 rounded-lg bg-surface-1 p-1 w-fit mb-6 self-start">
+        <div className="md:hidden flex gap-1 rounded-lg bg-surface-1 p-1 mb-6 overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`rounded-md px-3 py-2 text-xs font-medium transition-all duration-150 ${
+              className={`rounded-md px-3 py-2 text-xs font-medium whitespace-nowrap transition-all duration-150 ${
                 activeTab === tab
                   ? "bg-surface-3 text-text-primary shadow-sm"
                   : "text-text-secondary hover:text-text-primary"
@@ -1188,7 +1188,7 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                 })}
               </ul>
 
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 flex flex-col sm:flex-row gap-2">
                 <input
                   value={newTask}
                   onChange={(e) => setNewTask(e.target.value)}
@@ -1196,20 +1196,22 @@ export default function ProjectDashboard({ project }: { project: Project }) {
                   placeholder="Add a task..."
                   className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary placeholder:text-text-disabled focus:border-accent focus:outline-none"
                 />
-                <input
-                  type="date"
-                  value={newTaskDeadline}
-                  onChange={(e) => setNewTaskDeadline(e.target.value)}
-                  className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none"
-                />
-                <button
-                  onClick={addTask}
-                  disabled={!newTask.trim()}
-                  className="flex items-center gap-1 rounded-lg bg-surface-3 px-3 py-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors disabled:opacity-40"
-                >
-                  <Plus size={14} />
-                  Add
-                </button>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={newTaskDeadline}
+                    onChange={(e) => setNewTaskDeadline(e.target.value)}
+                    className="flex-1 sm:flex-none rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-accent focus:outline-none"
+                  />
+                  <button
+                    onClick={addTask}
+                    disabled={!newTask.trim()}
+                    className="flex items-center gap-1 rounded-lg bg-surface-3 px-3 py-2 text-sm font-medium text-text-secondary hover:text-text-primary transition-colors disabled:opacity-40"
+                  >
+                    <Plus size={14} />
+                    Add
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1401,9 +1403,9 @@ export default function ProjectDashboard({ project }: { project: Project }) {
         {activeTab === "My Case Study" && (
           <div className="max-w-3xl">
             {/* Header with Post button */}
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="type-title text-text-primary">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div className="min-w-0">
+                <h2 className="type-title text-text-primary truncate">
                   {project.title}
                 </h2>
                 <p className="type-body text-text-tertiary mt-1">

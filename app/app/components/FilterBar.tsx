@@ -188,8 +188,8 @@ export default function FilterBar({
               : "-translate-y-full opacity-0 pointer-events-none"
           }`}
         >
-        <div className="flex items-center gap-1">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
           <FilterDropdown
             label="Cause"
             sections={[
@@ -237,14 +237,14 @@ export default function FilterBar({
           )}
           </div>
 
-          <div className="relative ml-auto">
+          <div className="relative sm:ml-auto">
             <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search projects..."
-              className="h-9 w-[320px] rounded-[8px] border border-border bg-white pl-9 pr-9 text-[14px] text-black placeholder:text-text-tertiary transition-all duration-200 focus:border-accent focus:outline-none"
+              className="h-9 w-full sm:w-[320px] rounded-[8px] border border-border bg-white pl-9 pr-9 text-[14px] text-black placeholder:text-text-tertiary transition-all duration-200 focus:border-accent focus:outline-none"
             />
             {searchQuery && (
               <button

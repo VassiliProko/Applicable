@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import Navbar from "@/app/components/Navbar";
 import ProjectDashboard from "@/app/components/ProjectDashboard";
 import { Project } from "@/app/lib/types";
 
@@ -26,30 +25,19 @@ export default function ProjectPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <div className="flex flex-1 items-center justify-center">
-          <p className="type-body text-text-tertiary">Loading project...</p>
-        </div>
+      <div className="flex flex-1 items-center justify-center">
+        <p className="type-body text-text-tertiary">Loading project...</p>
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <div className="flex flex-1 items-center justify-center">
-          <p className="type-body text-text-tertiary">Project not found.</p>
-        </div>
+      <div className="flex flex-1 items-center justify-center">
+        <p className="type-body text-text-tertiary">Project not found.</p>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <ProjectDashboard project={project} />
-    </div>
-  );
+  return <ProjectDashboard project={project} />;
 }

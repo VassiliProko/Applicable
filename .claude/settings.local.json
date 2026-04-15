@@ -15,7 +15,13 @@
       "Bash(mv \"Thumbnail -  Mobile.png\" \"mobile.png\")",
       "Bash(mv \"Thumbnail - Marketing.png\" \"marketing.png\")",
       "Bash(node -e ':*)",
-      "Bash(node seed-companies.mjs)"
+      "Bash(node seed-companies.mjs)",
+      "Bash(npx auth *)",
+      "Bash(node -e \"const crypto = require\\('crypto'\\); console.log\\(crypto.randomBytes\\(32\\).toString\\('hex'\\)\\)\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/create-project)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/project/test)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/profile)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/manage-project/test)"
     ],
     "additionalDirectories": [
       "k:\\Downloads\\Applicable biuld\\Applicable\\app\\app\\api",

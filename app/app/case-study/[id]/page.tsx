@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import Navbar from "@/app/components/Navbar";
 import Link from "next/link";
 import { ArrowLeft, X, Mail } from "lucide-react";
 
@@ -64,36 +63,27 @@ export default function CaseStudyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <div className="flex flex-1 items-center justify-center">
-          <p className="type-body text-text-tertiary">Loading case study...</p>
-        </div>
+      <div className="flex flex-1 items-center justify-center">
+        <p className="type-body text-text-tertiary">Loading case study...</p>
       </div>
     );
   }
 
   if (error || !caseStudy) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <Navbar />
-        <div className="flex flex-1 flex-col items-center justify-center gap-4">
-          <p className="type-body text-text-tertiary">Case study not found.</p>
-          <Link
-            href="/profile"
-            className="text-sm text-accent hover:underline"
-          >
-            Back to Profile
-          </Link>
-        </div>
+      <div className="flex flex-1 flex-col items-center justify-center gap-4">
+        <p className="type-body text-text-tertiary">Case study not found.</p>
+        <Link
+          href="/profile"
+          className="text-sm text-accent hover:underline"
+        >
+          Back to Profile
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-
       <main className="flex-1 pb-16">
         {/* Header */}
         <div className="border-b border-[var(--border-base)]">
@@ -344,6 +334,5 @@ export default function CaseStudyPage() {
           </div>
         )}
       </main>
-    </div>
   );
 }
