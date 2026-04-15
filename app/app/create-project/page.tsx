@@ -54,7 +54,8 @@ export default function CreateProjectPage() {
   const [companyDomain, setCompanyDomain] = useState("");
   const [category, setCategory] = useState("");
   const [difficulty, setDifficulty] = useState<"Beginner" | "Intermediate" | "Advanced">("Intermediate");
-  const [timeCommitment, setTimeCommitment] = useState("");
+  const [timeMin, setTimeMin] = useState("");
+  const [timeMax, setTimeMax] = useState("");
   const [maxParticipants, setMaxParticipants] = useState(4);
 
   // Step 2: Details
@@ -111,7 +112,7 @@ export default function CreateProjectPage() {
   function canProceed(): boolean {
     switch (step) {
       case 0:
-        return !!(title && tagline && companyName && category && difficulty && timeCommitment);
+        return !!(title && tagline && companyName && category && difficulty && timeMin);
       case 1:
         return !!(overview && skillTags.length > 0 && learningOutcomes.some((o) => o.trim()));
       case 2:
@@ -138,7 +139,7 @@ export default function CreateProjectPage() {
         category,
         skillTags,
         difficulty,
-        timeCommitment,
+        timeCommitment: timeMax ? `${timeMin}-${timeMax} hours` : `${timeMin} hours`,
         overview,
         learningOutcomes: learningOutcomes.filter((o) => o.trim()),
         prerequisites: prerequisites.filter((p) => p.trim()),
@@ -346,12 +347,26 @@ export default function CreateProjectPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelClass}>Time Commitment *</label>
-                  <input
-                    value={timeCommitment}
-                    onChange={(e) => setTimeCommitment(e.target.value)}
-                    placeholder="e.g. 15-20 hours"
-                    className={inputClass}
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      value={timeMin}
+                      onChange={(e) => setTimeMin(e.target.value)}
+                      placeholder="Min"
+                      className={inputClass + " flex-1"}
+                    />
+                    <span className="text-sm text-text-tertiary">—</span>
+                    <input
+                      type="number"
+                      min={1}
+                      value={timeMax}
+                      onChange={(e) => setTimeMax(e.target.value)}
+                      placeholder="Max"
+                      className={inputClass + " flex-1"}
+                    />
+                    <span className="text-sm text-text-tertiary shrink-0">hours</span>
+                  </div>
                 </div>
                 <div>
                   <label className={labelClass}>Max Participants</label>
@@ -625,7 +640,7 @@ export default function CreateProjectPage() {
                   <span className="type-caption rounded-full bg-primary/15 px-2.5 py-1 font-medium text-primary">
                     {difficulty}
                   </span>
-                  <span className="type-caption text-text-tertiary">{timeCommitment}</span>
+                  <span className="type-caption text-text-tertiary">{timeMax ? `${timeMin}-${timeMax} hours` : `${timeMin} hours`}</span>
                   <span className="type-caption text-text-tertiary">{companyName}</span>
                   <span className="type-caption text-text-tertiary">{category}</span>
                 </div>

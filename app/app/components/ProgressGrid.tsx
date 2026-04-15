@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTheme } from "./ThemeProvider";
 
 const COLS = 14;
 const ROWS = 10;
@@ -13,6 +14,7 @@ export default function ProgressGrid({
   percent: number;
   completed?: boolean;
 }) {
+  const { theme } = useTheme();
   const filledCount = Math.round((percent / 100) * TOTAL);
 
   const { filledSet, opacities } = useMemo(() => {
@@ -43,7 +45,7 @@ export default function ProgressGrid({
   const isComplete = percent >= 100;
 
   return (
-    <div className="relative w-full aspect-4/3 bg-border overflow-hidden">
+    <div className="relative w-full aspect-4/3 overflow-hidden rounded-xl" style={{ backgroundColor: theme === "light" ? "#1a1a1e" : "rgba(255, 255, 255, 0.08)" }}>
       {/* Grid */}
       <div
         className="absolute inset-0 grid gap-px"
@@ -57,16 +59,11 @@ export default function ProgressGrid({
           return (
             <div
               key={i}
-              className={`rounded-xs transition-all duration-700 ${
-                isFilled
-                  ? "bg-primary"
-                  : "bg-surface-2"
-              }`}
-              style={
-                isFilled && !isComplete
-                  ? { opacity: opacities[i] }
-                  : undefined
-              }
+              className="rounded-xs transition-all duration-700"
+              style={{
+                backgroundColor: isFilled ? "#E8432A" : "#27272a",
+                opacity: isFilled && !isComplete ? opacities[i] : undefined,
+              }}
             />
           );
         })}
@@ -77,8 +74,8 @@ export default function ProgressGrid({
         className="absolute inset-0 pointer-events-none transition-all duration-1000"
         style={{
           background: completed
-            ? "radial-gradient(ellipse at center, transparent 10%, var(--primary-500) 75%)"
-            : "radial-gradient(ellipse at center, transparent 25%, var(--surface-1) 75%)",
+            ? "radial-gradient(ellipse at center, transparent 10%, #E8432A 75%)"
+            : "radial-gradient(ellipse at center, transparent 25%, #18181b 75%)",
         }}
       />
     </div>
