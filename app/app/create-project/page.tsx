@@ -274,6 +274,7 @@ export default function CreateProjectPage() {
             ))}
           </div>
 
+          <div key={step} className="animate-fade-in">
           {/* Step 1: Basics */}
           {step === 0 && (
             <div className="space-y-5">
@@ -694,6 +695,8 @@ export default function CreateProjectPage() {
               </div>
             </div>
           )}
+
+          </div>
 
           {/* Navigation */}
           <div className="flex items-center justify-between mt-8 pt-6 border-t border-[var(--border-base)]">
