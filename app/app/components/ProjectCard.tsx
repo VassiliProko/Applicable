@@ -72,7 +72,7 @@ export default function ProjectCard({
           onClick(project);
         }
       }}
-      className="group flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-5 transition-all duration-200 hover:bg-surface-2 hover:border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
+      className="group flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-5 transition-all duration-200 hover:bg-surface-2 hover:border-border hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
     >
       {/* Image */}
       <div className="w-full aspect-[16/9] overflow-hidden rounded-xl bg-black">

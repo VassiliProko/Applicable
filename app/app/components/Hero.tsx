@@ -3,9 +3,9 @@ import DotGrid from "./DotGrid";
 
 export default function Hero() {
   return (
-    <section className="flex flex-col items-start px-9 pt-18 pb-18 relative overflow-hidden">
+    <section className="flex flex-col items-center px-9 pt-28 pb-28 sm:pt-36 sm:pb-36 relative overflow-hidden">
       <DotGrid />
-      <div className="mx-auto w-full max-w-[1280px]">
+      <div className="mx-auto w-full max-w-[1280px] flex flex-col items-center text-center">
         <h1 className="type-display max-w-3xl relative z-10">
           Where skills take{" "}
           <span className="italic bg-gradient-to-r from-[#F0A030] via-[#E87A1A] to-[#D45A0C] bg-clip-text text-transparent inline-block pr-1 pb-1">flight</span>
@@ -14,14 +14,6 @@ export default function Hero() {
           Prove your abilities through real-world projects. No degree required.
           Build a verified track record that speaks for itself.
         </p>
-        {/* <Image
-          src="/images/landing_image.jpg"
-          alt="Landing hero"
-          width={600}
-          height={400}
-          className="mt-10 w-full max-w-3xl rounded-lg object-cover relative z-10"
-          priority
-        /> */}
         <div className="mt-8 flex items-stretch gap-3 relative z-10">
           <a
             href="#projects"

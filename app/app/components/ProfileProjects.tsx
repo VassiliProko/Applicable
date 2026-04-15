@@ -256,7 +256,7 @@ export default function ProfileProjects() {
                     tabIndex={0}
                     onClick={() => handleProjectClick(project, "Ongoing")}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleProjectClick(project, "Ongoing"); } }}
-                    className="flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
+                    className="flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
                   >
                     <FitTitle className="type-title">{project.title}</FitTitle>
                     <div className="mt-3">
@@ -320,7 +320,7 @@ export default function ProfileProjects() {
                   tabIndex={0}
                   onClick={() => handleProjectClick(project, "Applied")}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleProjectClick(project, "Applied"); } }}
-                  className="relative flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
+                  className="relative flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
                 >
                   <span className={`absolute top-3 right-3 rounded-full px-2.5 py-1 text-xs font-medium ${statusStyles[project.applicationStatus]}`}>
                     {statusLabels[project.applicationStatus]}
@@ -369,7 +369,7 @@ export default function ProfileProjects() {
                   tabIndex={0}
                   onClick={() => handleProjectClick(project, "Created")}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleProjectClick(project, "Created"); } }}
-                  className="flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
+                  className="flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="type-caption rounded-full bg-accent/10 px-2.5 py-0.5 font-medium text-accent">Creator</span>
@@ -422,7 +422,7 @@ export default function ProfileProjects() {
                   tabIndex={0}
                   onClick={() => router.push(`/case-study/${cs.id}`)}
                   onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); router.push(`/case-study/${cs.id}`); } }}
-                  className="flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
+                  className="flex h-full cursor-pointer flex-col rounded-xl border border-transparent bg-surface-1 p-4.5 transition-all duration-200 hover:border-border hover:bg-surface-2 hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.99]"
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
